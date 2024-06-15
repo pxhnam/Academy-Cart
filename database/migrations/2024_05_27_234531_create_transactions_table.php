@@ -15,11 +15,12 @@ return new class extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->string('bank_account');
-            $table->string('bank_name');
-            $table->date('card_expiry_date');
+            $table->string('bank_account')->nullable();
+            $table->string('bank_name')->nullable();
+            $table->date('card_expiry_date')->nullable();
             $table->enum('payment_method', PaymentMethod::getValues());
             $table->unsignedBigInteger('order_id');
+            $table->text('response');
             $table->timestamps();
         });
     }

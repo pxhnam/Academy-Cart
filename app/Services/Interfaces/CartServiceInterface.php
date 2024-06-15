@@ -8,6 +8,5 @@ interface CartServiceInterface
     public function add($courseId);
     public function summary($data);
     public function checkout($data);
-    public function removeCode();
     public function remove($id);
 }

@@ -12,7 +12,6 @@ Route::prefix('cart')->middleware(['web', 'authenticate'])->name('carts.')->grou
     Route::get('summary', [CartController::class, 'summary'])->name('summary');
     Route::post('add-cart', [CartController::class, 'addToCart'])->name('add');
     Route::post('remove-cart', [CartController::class, 'remove'])->name('remove');
-    Route::post('remove-code', [CartController::class, 'removeCode'])->name('removeCode');
 
     Route::post('checkout', [CartController::class, 'checkout'])->name('checkout');
 });

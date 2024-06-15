@@ -29,15 +29,11 @@ class CartController extends Controller
     }
     public function summary(Request $request)
     {
-        return $this->cartService->summary($request->all());
+        return $this->cartService->summary($request);
     }
     public function checkout(Request $request)
     {
-        return $this->cartService->checkout($request->all());
-    }
-    public function removeCode()
-    {
-        $this->cartService->removeCode();
+        return $this->cartService->checkout($request);
     }
     public function remove(Request $request)
     {

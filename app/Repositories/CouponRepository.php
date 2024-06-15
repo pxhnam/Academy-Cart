@@ -6,7 +6,7 @@ use Carbon\Carbon;
 use App\Models\Coupon;
 use App\Repositories\Interfaces\CouponRepositoryInterface;
 
-class CouponRepository  implements CouponRepositoryInterface
+class CouponRepository implements CouponRepositoryInterface
 {
     private $model;
     public function __construct()
@@ -21,7 +21,8 @@ class CouponRepository  implements CouponRepositoryInterface
     public function findValidCouponsByCost($cost)
     {
         $now = Carbon::now();
-        return $this->model::where('min_amount', '<=', $cost)
+        return $this->model::select('code', 'description')
+            ->where('min_amount', '<=', $cost)
             ->where('start_date', '<=', $now)
             ->where('expiry_date', '>=', $now)
             ->where(function ($query) {

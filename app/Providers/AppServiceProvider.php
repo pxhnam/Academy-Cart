@@ -5,31 +5,38 @@ namespace App\Providers;
 use App\Models\Cart;
 use App\Policies\CartPolicy;
 use App\Services\CartService;
+use App\Services\MomoService;
+use App\Services\OrderService;
 use App\Services\VNPayService;
 use App\Services\CouponService;
 use App\Services\CourseService;
+use App\Models\DiscountCondition;
 use App\Repositories\CartRepository;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\Gate;
+use App\Repositories\OrderRepository;
 use App\Repositories\CouponRepository;
 use App\Repositories\CourseRepository;
 use Illuminate\Support\ServiceProvider;
+use App\Services\DiscountConditionService;
+use App\Repositories\OrderDetailRepository;
 use App\Repositories\TransactionRepository;
+use App\Repositories\DiscountConditionRepository;
 use App\Services\Interfaces\CartServiceInterface;
+use App\Services\Interfaces\MomoServiceInterface;
+use App\Services\Interfaces\OrderServiceInterface;
 use App\Services\Interfaces\VNPayServiceInterface;
 use App\Services\Interfaces\CouponServiceInterface;
 use App\Services\Interfaces\CourseServiceInterface;
 use App\Repositories\Interfaces\CartRepositoryInterface;
 use App\Services\Interfaces\TransactionServiceInterface;
+use App\Repositories\Interfaces\OrderRepositoryInterface;
 use App\Repositories\Interfaces\CouponRepositoryInterface;
 use App\Repositories\Interfaces\CourseRepositoryInterface;
+use App\Services\Interfaces\DiscountConditionServiceInterface;
 use App\Repositories\Interfaces\OrderDetailRepositoryInterface;
-use App\Repositories\Interfaces\OrderRepositoryInterface;
 use App\Repositories\Interfaces\TransactionRepositoryInterface;
-use App\Repositories\OrderDetailRepository;
-use App\Repositories\OrderRepository;
-use App\Services\Interfaces\OrderServiceInterface;
-use App\Services\OrderService;
+use App\Repositories\Interfaces\DiscountConditionRepositoryInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -69,8 +76,14 @@ class AppServiceProvider extends ServiceProvider
         # inject order_details
         $this->app->bind(OrderDetailRepositoryInterface::class, OrderDetailRepository::class);
 
+        # inject orders
+        $this->app->bind(DiscountConditionRepositoryInterface::class, DiscountConditionRepository::class);
+        $this->app->bind(DiscountConditionServiceInterface::class, DiscountConditionService::class);
+
         # inject vnpay
         $this->app->bind(VNPayServiceInterface::class, VNPayService::class);
+        # inject momo
+        $this->app->bind(MomoServiceInterface::class, MomoService::class);
 
 
         #Policies

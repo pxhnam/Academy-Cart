@@ -83,19 +83,17 @@ class TransactionService implements TransactionServiceInterface
     //         return false;
     //     }
     // }
-    public function VNPay($orderId)
+    public function VNPay($request)
     {
-        $order = $this->orderService->find($orderId);
+        $order = $this->orderService->find($request->vnp_TxnRef);
         if ($order) {
             DB::beginTransaction();
             try {
                 $this->transactionRepository->create([
                     'user_id' => Auth::user()->id,
-                    'bank_account' => '123456789',
-                    'bank_name' => 'Test',
-                    'card_expiry_date' => Carbon::now(),
                     'payment_method' => PaymentMethod::VNPay,
                     'order_id' => $order->id,
+                    'response' => json_encode($request->all())
                 ]);
                 $order->state = OrderState::PAID;
                 $order->save();
@@ -107,14 +105,17 @@ class TransactionService implements TransactionServiceInterface
                         $cart->save();
                     }
                 }
-                if (Session::has('code')) {
-                    $coupon = $this->couponRepository->findByCode(Session::get('code'));
-                    if ($coupon) {
-                        $coupon->usage_count++;
-                        $coupon->save();
+                if (Session::has('codes')) {
+                    $codes = Session::get('codes');
+                    foreach ($codes as $code) {
+                        $coupon = $this->couponRepository->findByCode($code);
+                        if ($coupon) {
+                            $coupon->usage_count++;
+                            $coupon->save();
+                        }
                     }
                 }
-                Session::forget(['carts', 'code']);
+                Session::forget(['carts', 'codes']);
                 DB::commit();
                 return $order->id;
             } catch (\Exception $ex) {

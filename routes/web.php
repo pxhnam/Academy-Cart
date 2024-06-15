@@ -20,10 +20,10 @@ Route::prefix('')->group(function () {
         #Index
         Route::get('', [HomeController::class, 'index'])->name('home');
 
-        Route::get('thanh-toan', [OrderController::class, 'index'])->middleware('checkout')->name('checkout');
-        Route::post('thanh-toan', [OrderController::class, 'checkout'])->middleware('checkout');
+        Route::get('thanh-toan', [OrderController::class, 'index'])->middleware(['checkout', 'auth'])->name('checkout');
+        Route::post('thanh-toan', [OrderController::class, 'checkout'])->middleware(['checkout', 'auth']);
 
-        Route::get('vnpay-return', [TransactionController::class, 'vnpayReturn'])->name('vnpay.return');
+        Route::get('vnpay-return', [TransactionController::class, 'vnpayReturn'])->middleware('auth')->name('vnpay.return');
 
         #Login
         Route::get('dang-nhap', [HomeController::class, 'login'])->name('login');

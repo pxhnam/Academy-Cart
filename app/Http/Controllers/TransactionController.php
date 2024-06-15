@@ -30,6 +30,7 @@ class TransactionController extends Controller
     {
         $data = $this->vnpayService->finishedPayment($request);
         if (is_int($data)) {
+            dd($data);
             //success
             // return redirect()->route('checkout');
         } else {

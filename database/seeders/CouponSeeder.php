@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use Carbon\Carbon;
 use App\Enums\CouponType;
-use App\Models\Cart;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -26,6 +25,36 @@ class CouponSeeder extends Seeder
             'start_date' => Carbon::now(),
             'expiry_date' => Carbon::now()->addDays(rand(1, 30)),
             // 'usage_limit' => null,
+            'usage_count' => 0,
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now(),
+        ]);
+
+        DB::table('coupons')->insert([
+            'code' => 'GIAM',
+            'value' => 10,
+            'type' => CouponType::PERCENT,
+            'description' => 'giam 10% nhaaa',
+            'min_amount' => 200000,
+            'max_amount' => 100000,
+            'start_date' => Carbon::now(),
+            'expiry_date' => Carbon::now()->addDays(rand(1, 30)),
+            // 'usage_limit' => null,
+            'usage_count' => 0,
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now(),
+        ]);
+
+        DB::table('coupons')->insert([
+            'code' => 'CHAOMUNG',
+            'value' => 50,
+            'type' => CouponType::PERCENT,
+            'description' => 'giam 10% nhaaa',
+            'min_amount' => 200000,
+            'max_amount' => 50000,
+            'start_date' => Carbon::now(),
+            'expiry_date' => Carbon::now()->addDays(rand(1, 30)),
+            'usage_limit' => 100,
             'usage_count' => 0,
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),

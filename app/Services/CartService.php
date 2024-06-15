@@ -2,31 +2,32 @@
 
 namespace App\Services;
 
-use Carbon\Carbon;
 use App\Enums\CartState;
-use App\Enums\CouponType;
 use App\Helpers\APIResponse;
 use App\Helpers\NumberFormat;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Session;
 use App\Services\Interfaces\CartServiceInterface;
+use App\Services\Interfaces\CouponServiceInterface;
+use App\Services\Interfaces\CourseServiceInterface;
 use App\Repositories\Interfaces\CartRepositoryInterface;
-use App\Repositories\Interfaces\CouponRepositoryInterface;
-use App\Repositories\Interfaces\CourseRepositoryInterface;
+use App\Services\Interfaces\DiscountConditionServiceInterface;
 
 class CartService implements CartServiceInterface
 {
     private $cartRepository;
-    private $courseRepository;
-    private $couponRepository;
+    private $courseService;
+    private $couponService;
+    private $conditionService;
     public function __construct(
         CartRepositoryInterface $cartRepository,
-        CourseRepositoryInterface $courseRepository,
-        CouponRepositoryInterface $couponRepository
+        CourseServiceInterface $courseService,
+        CouponServiceInterface $couponService,
+        DiscountConditionServiceInterface $conditionService
     ) {
         $this->cartRepository = $cartRepository;
-        $this->courseRepository = $courseRepository;
-        $this->couponRepository = $couponRepository;
+        $this->courseService = $courseService;
+        $this->couponService = $couponService;
+        $this->conditionService = $conditionService;
     }
 
     public function list()
@@ -35,7 +36,7 @@ class CartService implements CartServiceInterface
         $courses = [];
         if ($carts->count() > 0) {
             foreach ($carts as $cart) {
-                $course = $this->courseRepository->find($cart->course_id);
+                $course = $this->courseService->find($cart->course_id);
                 if ($course['success']) {
                     $course = $course['course'];
                     $course['id'] = $cart->id; #use cart_id
@@ -51,7 +52,7 @@ class CartService implements CartServiceInterface
     public function add($courseId)
     {
         #Check for valid course
-        if ($this->courseRepository->check($courseId)) {
+        if ($this->courseService->check($courseId)) {
             $cart = $this->cartRepository->findByIdCourse($courseId);
             #Check the cart exists
             if ($cart) {
@@ -82,79 +83,74 @@ class CartService implements CartServiceInterface
 
     public function summary($data)
     {
-        $ids = $data['ids'] ?? [];
-        $code = $data['code'] ?? null;
+        $ids = $data->ids ?? [];
+        $ids = array_unique($ids);
+        $codes = $data->codes ?? [];
+        $codes = array_map('strtoupper', $codes);
+        $codes = array_unique($codes);
         $discount = 0;
         $total = 0;
-        foreach ($ids as $id) {
-            $cart = $this->cartRepository->findById($id);
-            if ($cart) {
-                $course = $this->courseRepository->find($cart->course_id);
-                if ($course['success']) {
-                    $total += $course['course']['cost'];
+        if (!empty($ids)) {
+            $total = $this->makeTotalCarts($ids);
+        }
+        if (!empty($codes)) {
+            foreach ($codes as $key => $code) {
+                $reduce = $this->couponService->makeDiscountCost($code, $total);
+                if ($reduce) {
+                    $discount += $reduce;
+                } else {
+                    unset($codes[$key]);
                 }
             }
+            $maxDiscount = $this->conditionService->limitTest($total, $discount);
+            if (is_numeric($maxDiscount)) {
+                $discount = $maxDiscount;
+            }
         }
-        if ($code) {
-            $coupon = $this->couponRepository->findByCode($code);
-            if ($coupon) {
-                $now = Carbon::now();
-                if ($coupon->start_date > $now || $coupon->expiry_date < $now) {
-                    $this->removeCode();
-                    return APIResponse::make(false, 'info', 'Mã giảm giá đã hết hạn.');
-                }
-                if ($coupon->usage_limit !== null && $coupon->usage_limit <= $coupon->usage_count) {
-                    $this->removeCode();
-                    return APIResponse::make(false, 'info', 'Mã đã đạt giới hạn sử dụng.');
-                }
-                if ($coupon->type === CouponType::FIXED) {
-                    $discount = $coupon->value;
-                } elseif ($coupon->type === CouponType::PERCENT) {
-                    $discount = $total * ($coupon->value / 100);
-                    if ($discount > $coupon->max_amount) {
-                        $discount = $coupon->max_amount;
-                    }
-                } else {
-                    return APIResponse::make(false, 'info', 'Không xác định.');
-                }
-                if ($total < $coupon->min_amount) {
-                    $discount = 0;
-                    return APIResponse::make(false, 'info', 'Hãy chọn thêm khóa học để sử dụng mã này.');
-                }
-            } else return APIResponse::make(false, 'info', 'Mã giảm giá không hợp lệ.');
-        }
-
         return APIResponse::make(
             true,
-            '',
+            'success',
             '',
             [
                 'cost' => NumberFormat::VND($total),
                 'discount' => NumberFormat::VND($discount),
                 'total' => NumberFormat::VND($total - $discount),
-            ] + (trim($code) ? ['code' => strtoupper($code)] : [])
-                + ($total !== 0 ? ['coupons' => $this->couponRepository->findValidCouponsByCost($total)] : [])
+                'codes' => $codes
+            ] + ($total !== 0 ? ['coupons' => $this->couponService->findValidCouponsByCost($total)] : [])
         );
     }
 
     public function checkout($data)
     {
-        $ids = $data['ids'] ?? [];
-        $code = $data['code'] ?? null;
+        $ids = $data->ids ?? [];
+        $ids = array_unique($ids);
+        $codes = $data->codes ?? [];
+        $codes = array_map('strtoupper', $codes);
+        $codes = array_unique($codes);
         $carts = [];
-        foreach ($ids as $id) {
-            $cart = $this->cartRepository->findById($id);
-            if ($cart) {
-                $carts[] = $id;
-            } else return false;
-        }
-        if (count($carts) > 0) {
-            Session::put('carts', $carts);
-            if ($code) {
-                $coupon = $this->couponRepository->findByCode($code);
-                if ($coupon) {
-                    Session::put('code', $code);
+        $total = 0;
+        if (!empty($ids)) {
+            foreach ($ids as $id) {
+                $cart = $this->cartRepository->findById($id);
+                if ($cart) {
+                    $carts[] = $id;
+                } else {
+                    $carts = [];
+                    return false;
                 }
+            }
+        }
+        if (!empty($carts)) {
+            Session::put('carts', $carts);
+            if (!empty($codes)) {
+                $total = $this->makeTotalCarts($ids);
+                foreach ($codes as $key => $code) {
+                    $reduce = $this->couponService->makeDiscountCost($code, $total);
+                    if ($reduce == 0) {
+                        unset($codes[$key]);
+                    }
+                }
+                Session::put('codes', $codes);
             }
             return APIResponse::make(true, 'success', '', ['link' => route('checkout')]);
         } else {
@@ -162,23 +158,27 @@ class CartService implements CartServiceInterface
         }
     }
 
-    public function removeCode()
-    {
-        if (Session::has('code')) {
-            Session::forget('code');
-        }
-    }
-
     public function remove($id)
     {
-        $cart = $this->cartRepository->findById($id);
-        if ($cart) {
-            // Gate::authorize('delete', $cart);
-            $removeCart = $this->cartRepository->removeFromCart($id);
-            if ($removeCart) {
-                $count = $this->cartRepository->countCart();
-                return APIResponse::make(true, 'success', 'Đã xóa khóa học khỏi giỏ hàng.', $count);
+        // Gate::authorize('delete', $cart);
+        $removeCart = $this->cartRepository->removeFromCart($id);
+        if ($removeCart) {
+            $count = $this->cartRepository->countCart();
+            return APIResponse::make(true, 'success', 'Đã xóa khóa học khỏi giỏ hàng.', $count);
+        }
+    }
+    public function makeTotalCarts($ids)
+    {
+        $total = 0;
+        if (!empty($ids)) {
+            foreach ($ids as $id) {
+                $cart = $this->cartRepository->findById($id);
+                $course = $this->courseService->find($cart->course_id);
+                if ($course['success']) {
+                    $total += $course['course']['cost'];
+                }
             }
         }
+        return $total;
     }
 }

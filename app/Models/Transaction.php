@@ -15,5 +15,6 @@ class Transaction extends Model
         'card_expiry_date',
         'payment_method',
         'order_id',
+        'response',
     ];
 }

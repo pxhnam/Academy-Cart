@@ -13,6 +13,7 @@ use App\Services\Interfaces\CouponServiceInterface;
 use App\Repositories\Interfaces\CartRepositoryInterface;
 use App\Repositories\Interfaces\OrderRepositoryInterface;
 use App\Repositories\Interfaces\CourseRepositoryInterface;
+use App\Services\Interfaces\DiscountConditionServiceInterface;
 use App\Repositories\Interfaces\OrderDetailRepositoryInterface;
 
 class OrderService implements OrderServiceInterface
@@ -23,54 +24,43 @@ class OrderService implements OrderServiceInterface
     private $cartRepository;
     private $courseRepository;
     private $couponService;
+    private $conditionService;
+
     public function __construct(
         OrderRepositoryInterface $orderRepository,
         OrderDetailRepositoryInterface $orderDetailRepository,
         CartRepositoryInterface $cartRepository,
         CourseRepositoryInterface $courseRepository,
-        CouponServiceInterface $couponService
+        CouponServiceInterface $couponService,
+        DiscountConditionServiceInterface $conditionService
     ) {
         $this->orderRepository = $orderRepository;
         $this->orderDetailRepository = $orderDetailRepository;
         $this->cartRepository = $cartRepository;
         $this->courseRepository = $courseRepository;
         $this->couponService = $couponService;
+        $this->conditionService = $conditionService;
     }
 
     public function show()
     {
         $ids = Session::get('carts') ?? [];
-        $code = Session::get('code') ?? null;
-        $carts = [];
-        $cost = 0;
+        $codes = Session::get('codes') ?? [];
         $discount = 0;
-        $total = 0;
-        foreach ($ids as $id) {
-            $cart = $this->cartRepository->findById($id);
-            if ($cart) {
-                $course = $this->courseRepository->find($cart->course_id);
-                if ($course['success']) {
-                    $course = $course['course'];
-                    $cost += $course['cost'];
-                    $carts[] = [
-                        'thumbnail' => $course['thumbnail'],
-                        'name' => $course['name'],
-                        'cost' => NumberFormat::VND($course['cost'])
-                    ];
-                }
-            }
+
+        list($carts, $total) = $this->getInfoCourseByCart($ids);
+
+        foreach ($carts as &$cart) {
+            $cart['cost'] = NumberFormat::VND($cart['cost']);
         }
 
-        if ($code) {
-            $discount = $this->couponService->makeDiscountCost($code, $cost);
-        }
-        $total = $cost - $discount;
+        $discount = $this->makeDiscount($codes, $total);
 
         return [
             'carts' => $carts,
-            'cost' => NumberFormat::VND($cost),
+            'cost' => NumberFormat::VND($total),
             'discount' => NumberFormat::VND($discount),
-            'total' => NumberFormat::VND($total),
+            'total' => NumberFormat::VND($total - $discount),
             'paymentMethods' => PaymentMethod::getValues()
         ];
     }
@@ -79,41 +69,33 @@ class OrderService implements OrderServiceInterface
     {
         return DB::transaction(function () {
             $userId = Auth::user()->id;
-            $discount = 0;
-            $total = 0;
             $ids = Session::get('carts') ?? [];
-            $code = Session::get('code') ?? null;
-            $courses = [];
-            foreach ($ids as $id) {
-                $cart = $this->cartRepository->findById($id);
-                if ($cart) {
-                    $course = $this->courseRepository->find($cart->course_id);
-                    if ($course['success']) {
-                        $course = $course['course'];
-                        $total += $course['cost'];
-                        $courses[] = [
-                            'course_id' => $course['id'],
-                            'course_name' => $course['name'],
-                            'cost' => $course['cost'],
-                        ];
-                    }
+            $codes = Session::get('codes') ?? [];
+            $promotion = [];
+            $discount = 0;
+
+            list($courses, $total) = $this->getInfoCourseByCart($ids);
+
+            if (!empty($codes)) {
+                foreach ($codes as $code) {
+                    $discount += $this->couponService->makeDiscountCost($code, $total);
+                    $promotion[] = $this->couponService->findByCode($code);
+                }
+                $maxDiscount = $this->conditionService->limitTest($total, $discount);
+                if (is_numeric($maxDiscount)) {
+                    $discount = $maxDiscount;
                 }
             }
-            if ($code) {
-                $discount = $this->couponService->makeDiscountCost($code, $total);
-            }
+
             $total -= $discount;
-            $coupon = $this->couponService->findByCode($code);
-            $couponId = $coupon->id ?? null;
-            $orderData = [
+            $order = $this->orderRepository->create([
                 'user_id' => $userId,
-                'coupon_id' => $couponId,
-                'coupon_code' => $code,
+                'promotion' => json_encode($promotion),
                 'discount' => $discount,
                 'total' => $total,
-            ];
-            $order = $this->orderRepository->create($orderData);
+            ]);
             $orderId = $order->id;
+
             foreach ($courses as $course) {
                 $course['order_id'] = $orderId;
                 $this->orderDetailRepository->create($course);
@@ -121,12 +103,51 @@ class OrderService implements OrderServiceInterface
 
             return [
                 'order_id' => $orderId,
-                'total' => $total
+                'total' => $total,
             ];
         });
     }
+
     public function find($id)
     {
         return $this->orderRepository->find($id);
+    }
+
+    public function makeDiscount($codes, $cost)
+    {
+        $discount = 0;
+        if (!empty($codes)) {
+            foreach ($codes as $code) {
+                $discount += $this->couponService->makeDiscountCost($code, $cost);
+            }
+            $maxDiscount = $this->conditionService->limitTest($cost, $discount);
+            if (is_numeric($maxDiscount)) {
+                $discount = $maxDiscount;
+            }
+        }
+        return $discount;
+    }
+
+    public function getInfoCourseByCart($ids)
+    {
+        $total = 0;
+        $courses = [];
+        foreach ($ids as $id) {
+            $cart = $this->cartRepository->findById($id);
+            if ($cart) {
+                $course = $this->courseRepository->find($cart->course_id);
+                if ($course['success']) {
+                    $course = $course['course'];
+                    $total += $course['cost'];
+                    $courses[] = [
+                        'course_id' => $course['id'],
+                        'thumbnail' => $course['thumbnail'],
+                        'name' => $course['name'],
+                        'cost' => $course['cost'],
+                    ];
+                }
+            }
+        }
+        return [$courses, $total];
     }
 }

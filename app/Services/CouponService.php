@@ -32,6 +32,11 @@ class CouponService implements CouponServiceInterface
         }
         return 0;
     }
+    public function findValidCouponsByCost($total)
+    {
+        return $this->couponRepository->findValidCouponsByCost($total);
+    }
+
     public function findByCode($code)
     {
         return $this->couponRepository->findByCode($code);

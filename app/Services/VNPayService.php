@@ -8,21 +8,26 @@ use App\Services\Interfaces\TransactionServiceInterface;
 class VNPayService implements VNPayServiceInterface
 {
     private $transactionService;
+    protected $vnp_TmnCode;
+    protected $vnp_HashSecret;
+    protected $vnp_Url;
+    protected $vnp_Returnurl;
 
     public function __construct(TransactionServiceInterface $transactionService)
     {
         $this->transactionService = $transactionService;
+        $this->vnp_TmnCode = env('VNP_TMN_CODE');
+        $this->vnp_HashSecret = env('VNP_HASH_SECRET');
+        $this->vnp_Url = env('VNP_URL');
+        $this->vnp_Returnurl = env('VNP_RETURN_URL');
     }
+
     public function processPayment($request)
     {
 
         $startTime = date("YmdHis");
         $expire = date('YmdHis', strtotime('+15 minutes', strtotime($startTime)));
 
-        $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-        $vnp_Returnurl = route('vnpay.return');
-        $vnp_TmnCode = 'ID36CNP7';
-        $vnp_HashSecret = 'F4T9SZ131V6BBHJ18IKOUPZXBXJS1MUY';
 
         $vnp_TxnRef = $request->order_id;
         $vnp_OrderInfo = 'Order ID: #' . $request->order_id;
@@ -35,7 +40,7 @@ class VNPayService implements VNPayServiceInterface
 
         $inputData = array(
             "vnp_Version" => "2.1.0",
-            "vnp_TmnCode" => $vnp_TmnCode,
+            "vnp_TmnCode" => $this->vnp_TmnCode,
             "vnp_Amount" => $vnp_Amount,
             "vnp_Command" => "pay",
             "vnp_CreateDate" => date('YmdHis'),
@@ -44,7 +49,7 @@ class VNPayService implements VNPayServiceInterface
             "vnp_Locale" => $vnp_Locale,
             "vnp_OrderInfo" => $vnp_OrderInfo,
             "vnp_OrderType" => $vnp_OrderType,
-            "vnp_ReturnUrl" => $vnp_Returnurl,
+            "vnp_ReturnUrl" => $this->vnp_Returnurl,
             "vnp_TxnRef" => $vnp_TxnRef,
             "vnp_ExpireDate" => $vnp_ExpireDate
         );
@@ -67,16 +72,15 @@ class VNPayService implements VNPayServiceInterface
             $query .= urlencode($key) . "=" . urlencode($value) . '&';
         }
 
-        $vnp_Url = $vnp_Url . "?" . $query;
-        if (isset($vnp_HashSecret)) {
-            $vnpSecureHash =   hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+        $vnp_Url = $this->vnp_Url . "?" . $query;
+        if (isset($this->vnp_HashSecret)) {
+            $vnpSecureHash =   hash_hmac('sha512', $hashdata, $this->vnp_HashSecret);
             $vnp_Url .= 'vnp_SecureHash=' . $vnpSecureHash;
         }
         return $vnp_Url;
     }
     public function finishedPayment($request)
     {
-        $vnp_HashSecret = 'F4T9SZ131V6BBHJ18IKOUPZXBXJS1MUY';
         $vnp_SecureHash = $request->vnp_SecureHash;
         $inputData = $request->except('vnp_SecureHash', 'vnp_SecureHashType');
         $hashData = "";
@@ -84,10 +88,10 @@ class VNPayService implements VNPayServiceInterface
             $hashData .= '&' . urlencode($key) . "=" . urlencode($value);
         }
         $hashData = ltrim($hashData, '&');
-        $secureHash = hash_hmac('sha512', $hashData, $vnp_HashSecret);
+        $secureHash = hash_hmac('sha512', $hashData, $this->vnp_HashSecret);
         if ($secureHash == $vnp_SecureHash) {
             if ($request->vnp_ResponseCode == '00') {
-                return $this->transactionService->VNPay($request->vnp_TxnRef);
+                return $this->transactionService->VNPay($request);
             } else {
                 return false;
             }

@@ -5,15 +5,15 @@ namespace App\Enums;
 class PaymentMethod
 {
     const VNPay = 'VNPay';
-    const ZaloPay = 'ZaloPay';
-    const Momo = 'Momo';
+    const QR_VNPay = 'QR_VNPay';
+    const QR_Momo = 'QR_Momo';
 
     public static function getValues()
     {
         return [
             self::VNPay,
-            self::ZaloPay,
-            self::Momo
+            self::QR_VNPay,
+            self::QR_Momo
         ];
     }
 }

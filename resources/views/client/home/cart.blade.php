@@ -17,10 +17,22 @@
 
 @section('scripts')
     <script>
-        var ids = [];
+        var ids = new Set();
+        var codes = new Set();
+        let inputSelectCourse, inputSelectCourses, btnCheckout, btnApply, costCourse, costDiscount, totalCourse;
         _document.ready(function() {
             loadData();
         })
+
+        function init() {
+            inputSelectCourse = $('input.select-course');
+            inputSelectCourses = $('input.select-courses');
+            costCourse = $('#costCourse');
+            costDiscount = $('#costDiscount');
+            totalCourse = $('#totalCourse');
+            btnCheckout = $('#btnCheckout');
+            btnApply = $('#btn-apply');
+        }
 
         function loadData() {
             $.ajax({
@@ -29,20 +41,21 @@
                 success: (response) => {
                     row.empty();
                     if (response.success) {
-                        let courses = response.data;
+                        let carts = response.data;
                         let data = '';
-                        $.each(courses, (index, course) =>
+                        $.each(carts, (index, cart) =>
                             data += boxItem(
-                                course.id,
-                                course.thumbnail,
-                                course.name,
-                                course.lecturer,
-                                course.cost
+                                cart.id,
+                                cart.thumbnail,
+                                cart.name,
+                                cart.lecturer,
+                                cart.cost
                             )
                         )
                         row.append(boxCart(data));
                         row.append(boxSummary());
                         Summary();
+                        init();
                     } else {
                         row.append(boxEmpty());
                     }
@@ -50,64 +63,76 @@
             })
         }
 
-        function loopCourse() {
-            ids = [];
-            $('input.select-item').each(function() {
-                let id = $(this).closest('tr').data('id');
-                if ($(this).is(':checked')) {
-                    ids.push(id);
-                }
+        function updateCourseChecked() {
+            ids.clear();
+            let selectedCourses = $('input.select-course:checked');
+            selectedCourses.each(function() {
+                ids.add($(this).closest('tr').data('id'));
             });
             Summary();
         }
 
-        function Summary(code = '') {
+        function updateCodeChecked() {
+            codes.clear();
+            let selectedCode = $('input.select-code:checked');
+            selectedCode.each(function() {
+                codes.add($(this).val());
+            });
+        }
+
+        _document.on('click', 'input.select-code', function() {
+            let code = $(this).val();
+            if ($(this).is(':checked')) {
+                codes.add(code);
+            } else {
+                codes.delete(code);
+            }
+            Summary();
+        })
+
+        function Summary() {
             $.ajax({
                 url: "{{ route('carts.summary') }}",
                 type: 'GET',
                 data: {
-                    ids,
-                    code
+                    ids: Array.from(ids),
+                    codes: Array.from(codes)
                 },
                 success: (response) => {
                     if (response.success) {
-                        $('#costCourse').text(response?.data.cost);
-                        $('#costDiscount').text(response?.data.discount);
-                        $('#totalCourse').text(response?.data.total);
+                        costCourse.text(response?.data.cost);
+                        costDiscount.text(response?.data.discount);
+                        totalCourse.text(response?.data.total);
                         $('.coupon').empty();
                         $('.list-coupons').empty();
 
                         if (response.data?.code) {
                             $('.coupon').append(`(${response.data?.code})`);
                         }
+                        codes = new Set(response.data.codes);
                         if (response.data?.coupons?.length !== 0) {
                             $.each(response.data?.coupons, (index, value) => {
-                                $('.list-coupons').append(
-                                    boxCoupons(value.code, response.data?.code === value.code)
-                                );
+                                let isChecked = response.data?.codes.includes(value.code);
+                                $('.list-coupons').append(boxCoupons(value.code, isChecked));
                             })
                         }
-                    } else {
-                        response.message && Toast({
-                            message: response.message,
-                            type: response.type
-                        });
-                    }
+                    } else {}
+
+                    response.message && Toast({
+                        message: response.message,
+                        type: response.type
+                    });
                 },
                 error: () => {}
             });
         }
 
-        _document.on('change', 'input[name="coupons"]', function() {
-            if ($(this).is(':checked')) {
-                Summary($(this).val());
-            }
-        });
         _document.on('click', '#btn-apply', function() {
             let code = $('#code').val();
             if (code.trim() === '') return false;
             $('#code').val('');
-            Summary(code);
+            codes.add(code);
+            Summary();
         });
 
         _document.on('click', '.btn-remove', function() {
@@ -123,7 +148,7 @@
                     if (response.success) {
                         if (response.data) {
                             _this.remove();
-                            loopCourse();
+                            updateCourseChecked();
                         } else {
                             loadData();
                         }
@@ -140,12 +165,13 @@
         });
 
         _document.on('click', '#btnCheckout', function() {
+            //updateCodeChecked();
             $.ajax({
                 url: "{{ route('carts.checkout') }}",
                 type: 'POST',
                 data: {
-                    ids,
-                    code: $('input[name="coupons"]:checked').val()
+                    ids: Array.from(ids),
+                    codes: Array.from(codes)
                 },
                 success: (response) => {
                     if (response.success) {
@@ -161,42 +187,27 @@
             });
         });
 
-        //checkbox
-        _document.on('change', 'input[type="checkbox"]', function() {
-            let len = $('input.select-item:checked').length;
-            let btnCheckout = $('#btnCheckout');
-            let btnApply = $('#btn-apply');
-            if (len === 0) {
-                btnCheckout.prop('disabled', true);
-                btnApply.prop('disabled', true);
-            } else {
-                btnCheckout.prop('disabled', false);
-                btnApply.prop('disabled', false);
-            }
-            loopCourse();
-        });
-
         //checkbox select all or cancel
-        _document.on('click', 'input.select-all', function() {
-            var checked = this.checked;
-            $('input.select-item').each(function(index, item) {
+        _document.on('click', 'input.select-courses', function() {
+            let checked = this.checked;
+            inputSelectCourse.each(function(index, item) {
                 item.checked = checked;
             });
+            updateCourseChecked();
         });
         //check selected items
-        _document.on('click', 'input.select-item', function() {
-            var checked = this.checked;
-            var all = $('input.select-all')[0];
-            var total = $('input.select-item').length;
-            var len = $('input.select-item:checked').length;
-            all.checked = len === total;
+        _document.on('click', 'input.select-course', function() {
+            let selected = $('input.select-course:checked');
+            inputSelectCourses[0].checked = selected.length === inputSelectCourse.length;
+            updateCourseChecked();
         });
 
+        //Render UI
         function boxItem(id, thumbnail, name, author, cost) {
             return `<tr data-id="${id}">
                         <th scope="row">
-                            <input type="checkbox" class="form-check-input select-item"
-                                name="select-item"/>
+                            <input type="checkbox" class="form-check-input select-course"
+                                name="select-course"/>
                         </th>
                         <td>
                             <div class="d-flex align-items-center">
@@ -229,8 +240,8 @@
                                     <thead class="bg-light">
                                         <tr>
                                             <th scope="col">
-                                                <input type="checkbox" class="form-check-input select-all" id='select-all' name="select-all" />
-                                                <label for='select-all'>Tất cả</label>
+                                                <input type="checkbox" class="form-check-input select-courses" id='select-courses' name="select-courses" />
+                                                <label for='select-courses'>Tất cả</label>
                                             </th>
                                             <th scope="col">Tên khóa học</th>
                                             <th scope="col">Giá</th>
@@ -268,7 +279,7 @@
                                             <input type="text" id="code" class="form-control"
                                                 placeholder="Mã giảm giá" />
                                             <button class="btn btn-outline-secondary" type="button" data-mdb-ripple-init
-                                                data-mdb-ripple-color="dark" id="btn-apply" disabled>
+                                                data-mdb-ripple-color="dark" id="btn-apply">
                                                 Áp dụng
                                             </button>
                                         </div>
@@ -284,7 +295,6 @@
                                     </li>
                                 </ul>
                                 <button type="button" data-mdb-button-init data-mdb-ripple-init
-                                    disabled
                                     id='btnCheckout'
                                     class="btn btn-primary btn-lg btn-block">
                                     THANH TOÁN
@@ -294,16 +304,20 @@
                     </div>`;
         }
 
-        function boxCoupons(code, check = false) {
+
+        function boxCoupons(code, isChecked = false) {
             return (`
                     <div class="form-check">
-                      <input class="form-check-input" type="radio" name="coupons" id="${code}" value="${code}" ${check? 'checked': ''}/>
+                      <input class="form-check-input select-code" type="checkbox" id="${code}" value="${code}" ${isChecked? 'checked': ''}/>
                       <label class="form-check-label" for="${code}"> ${code} </label>
                     </div>`);
         }
 
         function boxEmpty() {
-            return (`<div class='text-center text-uppercase'>Giỏ Hàng Trống</div>`);
+            return (`<div class='text-center text-uppercase'>
+                <p>Giỏ Hàng Trống</p>
+                <p><a href='/'>Trang Chủ</a></p>
+                </div>`);
         }
     </script>
 @endsection
