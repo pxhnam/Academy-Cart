@@ -4,9 +4,9 @@ namespace App\Enums;
 
 class OrderState
 {
-    const PENDING = 'pending';
-    const PAID  = 'paid';
-    const FAILED = 'failed';
+    const PENDING = 'PENDING';
+    const PAID  = 'PAID';
+    const FAILED = 'FAILED';
 
     public static function getValues()
     {

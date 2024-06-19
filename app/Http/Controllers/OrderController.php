@@ -4,7 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Enums\PaymentMethod;
 use Illuminate\Http\Request;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
 use App\Http\Controllers\Controller;
+use chillerlan\QRCode\Common\EccLevel;
+use chillerlan\QRCode\Output\QROutputInterface;
 use App\Services\Interfaces\MomoServiceInterface;
 use App\Services\Interfaces\OrderServiceInterface;
 use App\Services\Interfaces\VNPayServiceInterface;
@@ -36,27 +40,39 @@ class OrderController extends Controller
         $method = $request->method;
         if ($method) {
             switch ($method) {
-                case PaymentMethod::VNPay: {
+                case PaymentMethod::VNPAY: {
                         $order = $this->orderService->createOrder();
                         if ($order) {
                             $request->merge([
                                 'order_id' => $order['order_id'],
                                 'total' => $order['total']
                             ]);
-                            $vnp_Url = $this->vnpayService->processPayment($request);
+                            $vnp_Url = $this->vnpayService->create($request);
                             return redirect($vnp_Url);
                         }
                         return redirect()->back()->with(
                             ['notify' => ['type' => 'error', 'message' => 'Có lỗi xảy ra! Vui lòng thử lại sau.']]
                         );
                     }
-                case PaymentMethod::QR_VNPay:
-                    return redirect()->back()->with(
-                        ['notify' => ['type' => 'info', 'message' => PaymentMethod::QR_VNPay . ' chưa được hỗ trợ.']]
-                    );
-                case PaymentMethod::QR_Momo:
+                case PaymentMethod::MOMO:
+                    $response = $this->momoService->create($request);
+                    // dd($response);
+                    return redirect($response['payUrl']);
+                    // Tạo mã QR từ URL
 
-                    $response = $this->momoService->createQR($request);
+
+                    // $qrcode = new QRCode();
+                    // $image = $qrcode->render($response['qrCodeUrl']);
+                    // $image = base64_encode($image);
+                    // dd($image);
+                    // dd(base64_encode($image));
+                    // return view('welcome', compact('image'));
+                    // return redirect()->back()->with(
+                    //     ['notify' => ['type' => 'info', 'message' => PaymentMethod::MOMO . ' chưa được hỗ trợ.']]
+                    // );
+                case PaymentMethod::BANK:
+
+                    $response = $this->momoService->create($request);
                     if ($response['errorCode'] == 0) {
                         dd($response['qrCodeUrl']);
                         return response()->json(['qrCodeUrl' => $response['qrCodeUrl']]);

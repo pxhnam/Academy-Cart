@@ -10,30 +10,32 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
-use App\Services\Interfaces\OrderServiceInterface;
 use App\Repositories\Interfaces\CartRepositoryInterface;
 use App\Repositories\Interfaces\CouponRepositoryInterface;
+use App\Repositories\Interfaces\OrderRepositoryInterface;
 use App\Services\Interfaces\TransactionServiceInterface;
 use App\Repositories\Interfaces\TransactionRepositoryInterface;
 
 class TransactionService implements TransactionServiceInterface
 {
-    private $orderService;
+    private $orderRepository;
     private $cartRepository;
     private $couponRepository;
     private $transactionRepository;
 
     public function __construct(
         TransactionRepositoryInterface $transactionRepository,
-        OrderServiceInterface $orderService,
+        OrderRepositoryInterface $orderRepository,
         CouponRepositoryInterface $couponRepository,
         CartRepositoryInterface $cartRepository
     ) {
         $this->transactionRepository = $transactionRepository;
-        $this->orderService = $orderService;
+        $this->orderRepository = $orderRepository;
         $this->cartRepository = $cartRepository;
         $this->couponRepository = $couponRepository;
     }
+
+
     // public function VNPay($request)
     // {
     //     $vnp_HashSecret = 'F4T9SZ131V6BBHJ18IKOUPZXBXJS1MUY';
@@ -83,47 +85,61 @@ class TransactionService implements TransactionServiceInterface
     //         return false;
     //     }
     // }
-    public function VNPay($request)
+
+
+    public function create($request, $method)
     {
-        $order = $this->orderService->find($request->vnp_TxnRef);
+        if ($method === PaymentMethod::VNPAY) {
+            $orderId = $request->vnp_TxnRef;
+            $statusCode = $request->vnp_ResponseCode;
+        }
+
+        $order = $this->orderRepository->find($orderId);
         if ($order) {
             DB::beginTransaction();
             try {
                 $this->transactionRepository->create([
                     'user_id' => Auth::user()->id,
-                    'payment_method' => PaymentMethod::VNPay,
+                    'payment_method' => $method,
                     'order_id' => $order->id,
                     'response' => json_encode($request->all())
                 ]);
-                $order->state = OrderState::PAID;
-                $order->save();
-                $ids = Session::get('carts');
-                foreach ($ids as $id) {
-                    $cart = $this->cartRepository->findById($id);
-                    if ($cart) {
-                        $cart->state = CartState::PURCHASED;
-                        $cart->save();
-                    }
-                }
-                if (Session::has('codes')) {
-                    $codes = Session::get('codes');
-                    foreach ($codes as $code) {
-                        $coupon = $this->couponRepository->findByCode($code);
-                        if ($coupon) {
-                            $coupon->usage_count++;
-                            $coupon->save();
+                if ($statusCode == '00') {
+
+                    $order->state = OrderState::PAID;
+                    $order->save();
+                    $ids = Session::get('carts');
+                    foreach ($ids as $id) {
+                        $cart = $this->cartRepository->findById($id);
+                        if ($cart) {
+                            $cart->state = CartState::PURCHASED;
+                            $cart->save();
                         }
                     }
+                    if (Session::has('codes')) {
+                        $codes = Session::get('codes');
+                        foreach ($codes as $code) {
+                            $coupon = $this->couponRepository->findByCode($code);
+                            if ($coupon) {
+                                $coupon->usage_count++;
+                                $coupon->save();
+                            }
+                        }
+                    }
+                    Session::forget(['carts', 'codes']);
+                } else {
+                    $order->state = OrderState::FAILED;
+                    $order->save();
                 }
-                Session::forget(['carts', 'codes']);
                 DB::commit();
-                return $order->id;
+                return $statusCode == '00' ? $order->id : false;
             } catch (\Exception $ex) {
                 DB::rollback();
                 Log::error('VNPay transaction failed: ' . $ex->getMessage());
                 return false;
             }
         }
+
         return false;
     }
 }

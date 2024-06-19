@@ -13,24 +13,7 @@
 .navbar-brand {
     font-weight: bolder;
 }
-#loading {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 999;
-    width: 100%;
-    height: 100%;
-    display: none;
-    user-select: none;
-    justify-content: center;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.5);
-}
-.spinner-border {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-}
+
 .btn-cart {
     position: relative;
     font-size: 18px;
@@ -161,3 +144,49 @@ button,
 .payment-methods .form-check label {
     flex: 1;
 }
+/* Loading */
+
+#loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 99999;
+    width: 100vw;
+    height: 100vh;
+    display: none;
+    user-select: none;
+    /* justify-content: center;
+    align-items: center; */
+    /* text-align: center; */
+    background: rgba(255, 255, 255, 0.2);
+}
+.spinner-border {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+}
+
+.loader {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: inline-block;
+    border-top: 3px solid #00ac6b;
+    border-right: 3px solid transparent;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+}
+
+@keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Loading */

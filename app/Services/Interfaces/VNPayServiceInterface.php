@@ -4,6 +4,6 @@ namespace App\Services\Interfaces;
 
 interface VNPayServiceInterface
 {
-    public function processPayment($request);
-    public function finishedPayment($request);
+    public function create($request);
+    public function response($request);
 }

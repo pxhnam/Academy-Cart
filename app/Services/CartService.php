@@ -3,31 +3,40 @@
 namespace App\Services;
 
 use App\Enums\CartState;
+use App\Enums\CouponType;
 use App\Helpers\APIResponse;
 use App\Helpers\NumberFormat;
+use App\Traits\DiscountTrait;
 use Illuminate\Support\Facades\Session;
 use App\Services\Interfaces\CartServiceInterface;
-use App\Services\Interfaces\CouponServiceInterface;
-use App\Services\Interfaces\CourseServiceInterface;
 use App\Repositories\Interfaces\CartRepositoryInterface;
-use App\Services\Interfaces\DiscountConditionServiceInterface;
+use App\Repositories\Interfaces\OrderRepositoryInterface;
+use App\Repositories\Interfaces\CouponRepositoryInterface;
+use App\Repositories\Interfaces\CourseRepositoryInterface;
+use App\Repositories\Interfaces\DiscountConditionRepositoryInterface;
 
 class CartService implements CartServiceInterface
 {
-    private $cartRepository;
-    private $courseService;
-    private $couponService;
-    private $conditionService;
+    use DiscountTrait;
+    protected $cartRepository;
+    protected $courseRepository;
+    protected $couponRepository;
+    protected $conditionRepository;
+    protected $orderRepository;
+
     public function __construct(
         CartRepositoryInterface $cartRepository,
-        CourseServiceInterface $courseService,
-        CouponServiceInterface $couponService,
-        DiscountConditionServiceInterface $conditionService
+        CourseRepositoryInterface $courseRepository,
+        CouponRepositoryInterface $couponRepository,
+        DiscountConditionRepositoryInterface $conditionRepository,
+        OrderRepositoryInterface $orderRepository
     ) {
         $this->cartRepository = $cartRepository;
-        $this->courseService = $courseService;
-        $this->couponService = $couponService;
-        $this->conditionService = $conditionService;
+        $this->courseRepository = $courseRepository;
+        $this->conditionRepository = $conditionRepository;
+        $this->couponRepository = $couponRepository;
+        $this->orderRepository = $orderRepository;
+        $this->initializeDiscountTrait($couponRepository, $conditionRepository);
     }
 
     public function list()
@@ -36,7 +45,7 @@ class CartService implements CartServiceInterface
         $courses = [];
         if ($carts->count() > 0) {
             foreach ($carts as $cart) {
-                $course = $this->courseService->find($cart->course_id);
+                $course = $this->courseRepository->find($cart->course_id);
                 if ($course['success']) {
                     $course = $course['course'];
                     $course['id'] = $cart->id; #use cart_id
@@ -52,7 +61,7 @@ class CartService implements CartServiceInterface
     public function add($courseId)
     {
         #Check for valid course
-        if ($this->courseService->check($courseId)) {
+        if ($this->courseRepository->check($courseId)) {
             $cart = $this->cartRepository->findByIdCourse($courseId);
             #Check the cart exists
             if ($cart) {
@@ -90,38 +99,50 @@ class CartService implements CartServiceInterface
         $codes = array_unique($codes);
         $discount = 0;
         $total = 0;
+        $coupons = [];
+        $message = '';
         if (!empty($ids)) {
             $total = $this->makeTotalCarts($ids);
+
+            $coupons = [
+                'data' => $this->findValidCouponsByCost($total),
+                'limit' => false
+            ];
         }
         if (!empty($codes)) {
             foreach ($codes as $key => $code) {
-                $reduce = $this->couponService->makeDiscountCost($code, $total);
+                $reduce = $this->makeDiscountCost($code, $total);
                 if ($reduce) {
                     $discount += $reduce;
+                    list($test, $limit) = $this->limitTest($total, $discount);
+                    if (!$test) {
+                        $discount = $limit;
+                        $coupons['limit'] = true;
+                        break;
+                    }
                 } else {
+                    if (!empty($ids)) $message = 'Mã giảm giá không hợp lệ';
                     unset($codes[$key]);
                 }
-            }
-            $maxDiscount = $this->conditionService->limitTest($total, $discount);
-            if (is_numeric($maxDiscount)) {
-                $discount = $maxDiscount;
             }
         }
         return APIResponse::make(
             true,
-            'success',
-            '',
+            'info',
+            $message,
             [
                 'cost' => NumberFormat::VND($total),
                 'discount' => NumberFormat::VND($discount),
                 'total' => NumberFormat::VND($total - $discount),
-                'codes' => $codes
-            ] + ($total !== 0 ? ['coupons' => $this->couponService->findValidCouponsByCost($total)] : [])
+                'codes' => $codes,
+                'coupons' => $coupons
+            ]
         );
     }
 
     public function checkout($data)
     {
+        Session::forget(['carts', 'codes']);
         $ids = $data->ids ?? [];
         $ids = array_unique($ids);
         $codes = $data->codes ?? [];
@@ -145,8 +166,8 @@ class CartService implements CartServiceInterface
             if (!empty($codes)) {
                 $total = $this->makeTotalCarts($ids);
                 foreach ($codes as $key => $code) {
-                    $reduce = $this->couponService->makeDiscountCost($code, $total);
-                    if ($reduce == 0) {
+                    $reduce = $this->makeDiscountCost($code, $total);
+                    if ($reduce === 0) {
                         unset($codes[$key]);
                     }
                 }
@@ -167,18 +188,25 @@ class CartService implements CartServiceInterface
             return APIResponse::make(true, 'success', 'Đã xóa khóa học khỏi giỏ hàng.', $count);
         }
     }
+
     public function makeTotalCarts($ids)
     {
         $total = 0;
         if (!empty($ids)) {
             foreach ($ids as $id) {
                 $cart = $this->cartRepository->findById($id);
-                $course = $this->courseService->find($cart->course_id);
+                $course = $this->courseRepository->find($cart->course_id);
                 if ($course['success']) {
                     $total += $course['course']['cost'];
                 }
             }
         }
         return $total;
+    }
+
+    public function listRecommend()
+    {
+        $coursesId = $this->cartRepository->getCoursesIdNotInCart();
+        return $this->courseRepository->getRandomCoursesNotInCart($coursesId);
     }
 }

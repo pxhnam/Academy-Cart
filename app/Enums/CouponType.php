@@ -4,8 +4,8 @@ namespace App\Enums;
 
 class CouponType
 {
-    const PERCENT = 'percent';
-    const FIXED = 'fixed';
+    const PERCENT = 'PERCENT';
+    const FIXED = 'FIXED';
 
     public static function getValues()
     {

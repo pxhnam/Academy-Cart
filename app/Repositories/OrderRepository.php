@@ -2,15 +2,20 @@
 
 namespace App\Repositories;
 
+use App\Enums\OrderState;
 use App\Models\Order;
+use Illuminate\Support\Facades\Auth;
 use App\Repositories\Interfaces\OrderRepositoryInterface;
 
 class OrderRepository implements OrderRepositoryInterface
 {
     private $model;
+    private $userId;
+
     public function __construct()
     {
         $this->model = Order::class;
+        $this->userId = Auth::user()->id;
     }
 
     public function find($id)
@@ -21,5 +26,12 @@ class OrderRepository implements OrderRepositoryInterface
     public function create($data)
     {
         return $this->model::create($data);
+    }
+    public function getUsedPromotionsForUser()
+    {
+        return Order::where('user_id', $this->userId)
+            ->where('state', OrderState::PAID)
+            ->whereNotNull('promotion')
+            ->pluck('promotion');
     }
 }

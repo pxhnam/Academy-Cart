@@ -39,6 +39,7 @@
                 url: "{{ route('carts.list') }}",
                 type: 'GET',
                 success: (response) => {
+                    // console.log(response);
                     row.empty();
                     if (response.success) {
                         let carts = response.data;
@@ -99,21 +100,19 @@
                     codes: Array.from(codes)
                 },
                 success: (response) => {
+                    // console.log(response);
                     if (response.success) {
                         costCourse.text(response?.data.cost);
                         costDiscount.text(response?.data.discount);
                         totalCourse.text(response?.data.total);
-                        $('.coupon').empty();
                         $('.list-coupons').empty();
 
-                        if (response.data?.code) {
-                            $('.coupon').append(`(${response.data?.code})`);
-                        }
-                        codes = new Set(response.data.codes);
-                        if (response.data?.coupons?.length !== 0) {
-                            $.each(response.data?.coupons, (index, value) => {
+                        codes = new Set(response.data.codes ?? []);
+                        if (response.data?.coupons?.data?.length !== 0) {
+                            $.each(response.data?.coupons?.data, (index, value) => {
                                 let isChecked = response.data?.codes.includes(value.code);
-                                $('.list-coupons').append(boxCoupons(value.code, isChecked));
+                                let isMax = response.data.coupons.limit;
+                                $('.list-coupons').append(boxCoupons(value.code, isChecked, isMax));
                             })
                         }
                     } else {}
@@ -271,7 +270,7 @@
                                         <span id='costCourse'>0 đ</span>
                                     </li>
                                     <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                        <span>Mã ưu đãi <span class='coupon'></span></span>
+                                        <span>Giảm giá: </span>
                                         <span id='costDiscount'>0 đ</span>
                                     </li>
                                     <li class="list-group-item px-0">
@@ -305,10 +304,11 @@
         }
 
 
-        function boxCoupons(code, isChecked = false) {
+        function boxCoupons(code, isChecked = false, isMax = false) {
             return (`
                     <div class="form-check">
-                      <input class="form-check-input select-code" type="checkbox" id="${code}" value="${code}" ${isChecked? 'checked': ''}/>
+                      <input class="form-check-input select-code" type="checkbox" id="${code}" value="${code}" ${isChecked? 'checked': ''}
+                      ${isMax && !isChecked ? 'disabled': ''}/>
                       <label class="form-check-label" for="${code}"> ${code} </label>
                     </div>`);
         }

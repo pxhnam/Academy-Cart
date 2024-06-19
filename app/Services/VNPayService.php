@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\PaymentMethod;
 use App\Services\Interfaces\VNPayServiceInterface;
 use App\Services\Interfaces\TransactionServiceInterface;
 
@@ -22,7 +23,7 @@ class VNPayService implements VNPayServiceInterface
         $this->vnp_Returnurl = env('VNP_RETURN_URL');
     }
 
-    public function processPayment($request)
+    public function create($request)
     {
 
         $startTime = date("YmdHis");
@@ -34,7 +35,7 @@ class VNPayService implements VNPayServiceInterface
         $vnp_OrderType = 'Courses';
         $vnp_Amount = $request->total * 100;
         $vnp_Locale = 'VN';
-        $vnp_BankCode = 'NCB';
+        // $vnp_BankCode = 'NCB';
         $vnp_IpAddr = $request->ip();
         $vnp_ExpireDate = $expire;
 
@@ -79,7 +80,7 @@ class VNPayService implements VNPayServiceInterface
         }
         return $vnp_Url;
     }
-    public function finishedPayment($request)
+    public function response($request)
     {
         $vnp_SecureHash = $request->vnp_SecureHash;
         $inputData = $request->except('vnp_SecureHash', 'vnp_SecureHashType');
@@ -90,11 +91,11 @@ class VNPayService implements VNPayServiceInterface
         $hashData = ltrim($hashData, '&');
         $secureHash = hash_hmac('sha512', $hashData, $this->vnp_HashSecret);
         if ($secureHash == $vnp_SecureHash) {
-            if ($request->vnp_ResponseCode == '00') {
-                return $this->transactionService->VNPay($request);
-            } else {
-                return false;
-            }
+            // if ($request->vnp_ResponseCode == '00') {
+            return $this->transactionService->create($request, PaymentMethod::VNPAY);
+            // } else {
+            // return false;
+            // }
         } else {
             return false;
         }

@@ -15,17 +15,18 @@ class DiscountConditionService implements DiscountConditionServiceInterface
     }
     public function limitTest($total, $discount)
     {
-        $condition = $this->conditionRepository->first();
+        // $condition = $this->conditionRepository->first();
 
-        if ($condition) {
-            $maxDiscount = $total * ($condition->maximum / 100);
+        // if ($condition) {
+        //     $maxDiscount = $total * ($condition->maximum / 100);
 
-            if ($discount > $maxDiscount) {
-                return $maxDiscount;
-            }
+        //     if ($discount > $maxDiscount) {
+        //         return $maxDiscount;
+        //     }
 
-            return true;
-        }
+        //     return true;
+        // }
+        // return false;
         return false;
     }
 }

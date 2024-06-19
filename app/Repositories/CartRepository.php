@@ -72,4 +72,11 @@ class CartRepository implements CartRepositoryInterface
             ->where('state', CartState::PENDING)
             ->update(['state' => CartState::REMOVED]);
     }
+    public function getCoursesIdNotInCart()
+    {
+        return $this->forUser()
+            ->whereIn('state', [CartState::PENDING, CartState::PURCHASED])
+            ->pluck('course_id')
+            ->toArray();
+    }
 }

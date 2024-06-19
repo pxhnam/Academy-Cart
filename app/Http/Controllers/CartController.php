@@ -40,4 +40,8 @@ class CartController extends Controller
         $cart_id = $request->id;
         return $this->cartService->remove($cart_id);
     }
+    public function recommend()
+    {
+        return $this->cartService->listRecommend();
+    }
 }

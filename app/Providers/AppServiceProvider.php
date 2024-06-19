@@ -76,7 +76,7 @@ class AppServiceProvider extends ServiceProvider
         # inject order_details
         $this->app->bind(OrderDetailRepositoryInterface::class, OrderDetailRepository::class);
 
-        # inject orders
+        # inject discount condition
         $this->app->bind(DiscountConditionRepositoryInterface::class, DiscountConditionRepository::class);
         $this->app->bind(DiscountConditionServiceInterface::class, DiscountConditionService::class);
 

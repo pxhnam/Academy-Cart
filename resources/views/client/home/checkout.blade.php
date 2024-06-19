@@ -56,10 +56,11 @@
                                                         <img src="{{ $cart['thumbnail'] }}" alt=""
                                                             class="pic-in-cart" />
                                                         <div class="ms-3">
-                                                            <p class="fw-bold mb-1">{{ $cart['name'] }}</p>
+                                                            <p class="fw-bold mb-1">{{ $cart['course_name'] }}</p>
                                                         </div>
                                                     </div>
                                                 </td>
+                                                {{-- $cart['cost'] --}}
                                                 <td>{{ $cart['cost'] }}</td>
                                             </tr>
                                         @endforeach

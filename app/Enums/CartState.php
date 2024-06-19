@@ -4,9 +4,9 @@ namespace App\Enums;
 
 class CartState
 {
-    const PENDING = 'pending';
-    const PURCHASED = 'purchased';
-    const REMOVED = 'removed';
+    const PENDING = 'PENDING';
+    const PURCHASED = 'PURCHASED';
+    const REMOVED = 'REMOVED';
 
     public static function getValues()
     {

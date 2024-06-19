@@ -7,4 +7,5 @@ interface OrderServiceInterface
     public function show();
     public function find($id);
     public function createOrder();
+    // public function getUsedCodesByUser();
 }

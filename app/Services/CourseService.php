@@ -24,4 +24,8 @@ class CourseService implements CourseServiceInterface
     {
         return $this->courseRepository->check($id);
     }
+    public function getRandomCoursesNotInCart($ids)
+    {
+        return $this->courseRepository->getRandomCoursesNotInCart($ids);
+    }
 }

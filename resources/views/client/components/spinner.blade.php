@@ -1,7 +1,8 @@
 {{-- Spinner --}}
 <div id="loading">
-    <div class="spinner-border" role="status">
+    {{-- <div class="spinner-border" role="status">
         <span class="visually-hidden">Loading...</span>
-    </div>
+    </div> --}}
+    <span class="loader" id="loader"></span>
 </div>
 {{-- Spinner --}}

@@ -2,44 +2,49 @@
 
 namespace App\Services;
 
-use App\Enums\CartState;
+use App\Enums\CouponType;
 use App\Enums\PaymentMethod;
 use App\Helpers\NumberFormat;
+use App\Traits\DiscountTrait;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use App\Services\Interfaces\OrderServiceInterface;
-use App\Services\Interfaces\CouponServiceInterface;
 use App\Repositories\Interfaces\CartRepositoryInterface;
 use App\Repositories\Interfaces\OrderRepositoryInterface;
+use App\Repositories\Interfaces\CouponRepositoryInterface;
 use App\Repositories\Interfaces\CourseRepositoryInterface;
-use App\Services\Interfaces\DiscountConditionServiceInterface;
 use App\Repositories\Interfaces\OrderDetailRepositoryInterface;
+use App\Repositories\Interfaces\DiscountConditionRepositoryInterface;
 
 class OrderService implements OrderServiceInterface
 {
+    use DiscountTrait;
 
-    private $orderRepository;
-    private $orderDetailRepository;
-    private $cartRepository;
-    private $courseRepository;
-    private $couponService;
-    private $conditionService;
+    protected $orderRepository;
+    protected $orderDetailRepository;
+    protected $cartRepository;
+    protected $courseRepository;
+    protected $couponRepository;
+    protected $conditionRepository;
+
 
     public function __construct(
         OrderRepositoryInterface $orderRepository,
         OrderDetailRepositoryInterface $orderDetailRepository,
         CartRepositoryInterface $cartRepository,
         CourseRepositoryInterface $courseRepository,
-        CouponServiceInterface $couponService,
-        DiscountConditionServiceInterface $conditionService
+        CouponRepositoryInterface $couponRepository,
+        DiscountConditionRepositoryInterface $conditionRepository
     ) {
         $this->orderRepository = $orderRepository;
         $this->orderDetailRepository = $orderDetailRepository;
         $this->cartRepository = $cartRepository;
         $this->courseRepository = $courseRepository;
-        $this->couponService = $couponService;
-        $this->conditionService = $conditionService;
+        $this->couponRepository = $couponRepository;
+        $this->conditionRepository = $conditionRepository;
+        $this->initializeDiscountTrait($couponRepository, $conditionRepository);
     }
 
     public function show()
@@ -78,13 +83,14 @@ class OrderService implements OrderServiceInterface
 
             if (!empty($codes)) {
                 foreach ($codes as $code) {
-                    $discount += $this->couponService->makeDiscountCost($code, $total);
-                    $promotion[] = $this->couponService->findByCode($code);
+                    //$discount += $this->makeDiscountCost($code, $total);
+                    $promotion[] = $this->couponRepository->findValidCode($code);
                 }
-                $maxDiscount = $this->conditionService->limitTest($total, $discount);
-                if (is_numeric($maxDiscount)) {
-                    $discount = $maxDiscount;
-                }
+                $discount = $this->makeDiscount($codes, $total);
+                // list($test, $limit) = $this->limitTest($total, $discount);
+                // if (!$test) {
+                //     $discount = $limit;
+                // }
             }
 
             $total -= $discount;
@@ -100,7 +106,6 @@ class OrderService implements OrderServiceInterface
                 $course['order_id'] = $orderId;
                 $this->orderDetailRepository->create($course);
             }
-
             return [
                 'order_id' => $orderId,
                 'total' => $total,
@@ -113,16 +118,16 @@ class OrderService implements OrderServiceInterface
         return $this->orderRepository->find($id);
     }
 
-    public function makeDiscount($codes, $cost)
+    public function makeDiscount($codes, $total)
     {
         $discount = 0;
         if (!empty($codes)) {
             foreach ($codes as $code) {
-                $discount += $this->couponService->makeDiscountCost($code, $cost);
+                $discount += $this->makeDiscountCost($code, $total);
             }
-            $maxDiscount = $this->conditionService->limitTest($cost, $discount);
-            if (is_numeric($maxDiscount)) {
-                $discount = $maxDiscount;
+            list($test, $limit) = $this->limitTest($total, $discount);
+            if (!$test) {
+                $discount = $limit;
             }
         }
         return $discount;
@@ -142,7 +147,7 @@ class OrderService implements OrderServiceInterface
                     $courses[] = [
                         'course_id' => $course['id'],
                         'thumbnail' => $course['thumbnail'],
-                        'name' => $course['name'],
+                        'course_name' => $course['name'],
                         'cost' => $course['cost'],
                     ];
                 }

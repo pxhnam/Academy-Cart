@@ -9,26 +9,53 @@ use App\Repositories\Interfaces\CouponRepositoryInterface;
 class CouponRepository implements CouponRepositoryInterface
 {
     private $model;
+    private $now;
     public function __construct()
     {
         $this->model = Coupon::class;
+        $this->now = Carbon::now();
     }
 
     public function findByCode($code)
     {
         return $this->model::where('code', $code)->first();
     }
-    public function findValidCouponsByCost($cost)
+
+    public function findValidCouponsByCost($codes, $total)
     {
-        $now = Carbon::now();
         return $this->model::select('code', 'description')
-            ->where('min_amount', '<=', $cost)
-            ->where('start_date', '<=', $now)
-            ->where('expiry_date', '>=', $now)
+            ->whereNotIn('code', $codes)
+            ->where('min_amount', '<=', $total)
+            ->where('start_date', '<=', $this->now)
+            ->where('expiry_date', '>=', $this->now)
             ->where(function ($query) {
                 $query->whereColumn('usage_count', '<', 'usage_limit')
                     ->orWhereNull('usage_limit');
             })
             ->get();
+    }
+
+    public function findValidCode($code)
+    {
+        return $this->model::where('code', $code)
+            ->where('start_date', '<=', $this->now)
+            ->where('expiry_date', '>=', $this->now)
+            ->where(function ($query) {
+                $query->whereColumn('usage_count', '<', 'usage_limit')
+                    ->orWhereNull('usage_limit');
+            })
+            ->first();
+    }
+
+    public function checkValidCode($code)
+    {
+        return $this->model::where('code', $code)
+            ->where('start_date', '<=', $this->now)
+            ->where('expiry_date', '>=', $this->now)
+            ->where(function ($query) {
+                $query->whereColumn('usage_count', '<', 'usage_limit')
+                    ->orWhereNull('usage_limit');
+            })
+            ->exists();
     }
 }

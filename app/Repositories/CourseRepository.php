@@ -38,4 +38,14 @@ class CourseRepository implements CourseRepositoryInterface
             return $data->json();
         }
     }
+    public function getRandomCoursesNotInCart($ids)
+    {
+
+        // Chuyển mảng $ids thành chuỗi, phân cách bởi dấu phẩy
+        $idsString = implode(',', $ids);
+        $data = Http::get($this->apiCourse . 'randomCoursesNotInCart/' . $idsString);
+        if ($data->successful()) {
+            return $data->json();
+        }
+    }
 }
