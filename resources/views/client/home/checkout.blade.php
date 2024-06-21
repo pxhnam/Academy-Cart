@@ -24,19 +24,19 @@
             </ul>
         </div>
         <div class="col-md-3 my-3"></div>
-        <div class="col-xl-6 col-md-12">
+        <div class="col-xl-7 col-md-12">
             <div class="list-course d-flex flex-column gap-2 bg-light box-shadow rounded p-3 mb-3">
                 @foreach ($carts ?? [] as $cart)
                     <div
                         class="d-flex gap-3 flex-column flex-md-row align-items-center justify-content-center justify-content-md-start">
                         <img class="rounded" height="100px" width="200px" src="{{ $cart['thumbnail'] }}" alt="" />
-                        <div class="d-flex flex-column">
-                            <h3 class="fw-bold">{{ $cart['course_name'] }}</h3>
+                        <div class="d-flex flex-column flex-grow-1">
+                            <h3 class="fw-bold fs-5">{{ $cart['course_name'] }}</h3>
                             <p class="mb-1"><i class="fa-regular fa-clock"></i> {{ $cart['duration'] }} giờ</p>
                             <p class="mb-0">Bởi {{ $cart['lecturer'] }}</p>
                         </div>
                         <div class="d-flex align-items-center">
-                            <p class="fw-semibold fs-5">{{ $cart['cost'] }}</p>
+                            <p class="fw-semibold m-0">{{ $cart['cost'] }}</p>
                         </div>
                     </div>
                 @endforeach
@@ -45,7 +45,7 @@
                 <div class="d-flex justify-content-between mb-3">
                     <span>Giá niêm yết:</span><span>{{ $base ?? '0 đ' }}</span>
                 </div>
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between mb-3">
                     <span>Giảm giá:</span><span>{{ $reduce ?? '0 đ' }}</span>
                 </div>
                 <div class="d-flex justify-content-between">
@@ -57,7 +57,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-6 col-md-12">
+        <div class="col-xl-5 col-md-12">
             <div class="bg-light box-shadow p-3 mb-3 rounded">
                 <h3>Phương thức thanh toán</h3>
                 <div class="row d-flex flex-column gap-2 align-items-center" id="list-method">
@@ -97,6 +97,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
                 </svg>
+
+
                 Sau khi chuyển khoản quý khách vui lòng chụp lại màn hình thanh
                 toán thành công hoặc biên lai chuyển tiền. Trendemy sẽ liên hệ với
                 quý khách ngay khi nhận được khoản tiền thanh toán thông qua thông

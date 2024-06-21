@@ -137,12 +137,15 @@
             aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse justify-content-between" id="navbarNav">
+        <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav box-search-nav m-auto my-3 my-lg-0">
-                <div class="form-search">
+                <div class="form-search d-none d-sm-flex">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" placeholder="Input something..." />
                 </div>
+                <button class="btn btn-outline-light d-flex d-sm-none">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
             </ul>
             @auth
                 <ul class="navbar-nav menu-user-nav gap-3">

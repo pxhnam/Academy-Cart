@@ -165,8 +165,6 @@ class OrderService implements OrderServiceInterface
     {
         $order = $this->orderRepository->getWithDetails($orderId);
         $order->total = NumberFormat::VND($order->total);
-        // $order->where('user_id', $this->userId);
-
 
         foreach ($order->details as $detail) {
             $detail->cost = NumberFormat::VND($detail->cost);
@@ -177,12 +175,10 @@ class OrderService implements OrderServiceInterface
             }
         }
 
-        $count = $this->orderDetailRepository->countByOrder($orderId);
-
         $data = [
             'total' => $order->total,
             'details' => $order->details,
-            'count' => $count,
+            'count' => $order->details->count(),
         ];
         return $data;
     }

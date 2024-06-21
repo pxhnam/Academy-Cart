@@ -359,9 +359,9 @@
 
         //Render UI
         function boxRecommend(id, thumbnail, name, duration, author) {
-            return (`<div class="col-lg-3 col-md-6" data-id="${id}">
-                    <div class="shadow bg-light rounded m-5 m-md-2">
-                        <img src="${thumbnail}" alt="" height="150px" class="w-100 rounded" />
+            return (`<div class="col-xxl-3 col-xl-4 col-md-6" data-id="${id}">
+                    <div class="shadow bg-light rounded m-0 m-sm-5 m-md-2 m-lg-5 m-xl-2">
+                        <img src="${thumbnail}" alt="${name}" height="150px" class="w-100 rounded" />
                         <div class="p-2">
                             <h5 class="fw-bold"><a href='#' class='text-decoration-none'>${name}</a></h5>
                             <p class="mb-0">

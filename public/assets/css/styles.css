@@ -334,6 +334,7 @@ footer div:not(:first-child) {
     display: none; /* Safari and Chrome */
 }
 .notice-checkout {
+    color: #6d6b6b;
     font-size: 20px;
 }
 .notice-checkout svg {
@@ -370,7 +371,7 @@ footer div:not(:first-child) {
     list-style-type: none;
     width: 50%;
     float: left;
-    font-size: 12px;
+    font-size: 15px;
     position: relative;
     text-align: center;
     text-transform: uppercase;
@@ -625,4 +626,7 @@ footer div:not(:first-child) {
 
 #btn-remove.text-danger {
     cursor: pointer;
+}
+#list-method .method-item {
+    width: 350px;
 }
