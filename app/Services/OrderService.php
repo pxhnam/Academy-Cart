@@ -28,6 +28,7 @@ class OrderService implements OrderServiceInterface
     protected $courseRepository;
     protected $couponRepository;
     protected $conditionRepository;
+    private $userId;
 
 
     public function __construct(
@@ -44,6 +45,7 @@ class OrderService implements OrderServiceInterface
         $this->courseRepository = $courseRepository;
         $this->couponRepository = $couponRepository;
         $this->conditionRepository = $conditionRepository;
+        $this->userId = Auth::user()->id;
         $this->initializeDiscountTrait($couponRepository, $conditionRepository);
     }
 
@@ -53,7 +55,7 @@ class OrderService implements OrderServiceInterface
         $codes = Session::get('codes') ?? [];
         $discount = 0;
 
-        list($carts, $total) = $this->getInfoCourseByCart($ids);
+        list($carts, $base, $total) = $this->getInfoCourseByCart($ids);
 
         foreach ($carts as &$cart) {
             $cart['cost'] = NumberFormat::VND($cart['cost']);
@@ -63,7 +65,8 @@ class OrderService implements OrderServiceInterface
 
         return [
             'carts' => $carts,
-            'cost' => NumberFormat::VND($total),
+            'base' => NumberFormat::VND($base),
+            'reduce' => NumberFormat::VND($base - $total),
             'discount' => NumberFormat::VND($discount),
             'total' => NumberFormat::VND($total - $discount),
             'paymentMethods' => PaymentMethod::getValues()
@@ -73,13 +76,12 @@ class OrderService implements OrderServiceInterface
     public function createOrder()
     {
         return DB::transaction(function () {
-            $userId = Auth::user()->id;
             $ids = Session::get('carts') ?? [];
             $codes = Session::get('codes') ?? [];
             $promotion = [];
             $discount = 0;
 
-            list($courses, $total) = $this->getInfoCourseByCart($ids);
+            list($courses, $base, $total) = $this->getInfoCourseByCart($ids);
 
             if (!empty($codes)) {
                 foreach ($codes as $code) {
@@ -95,7 +97,7 @@ class OrderService implements OrderServiceInterface
 
             $total -= $discount;
             $order = $this->orderRepository->create([
-                'user_id' => $userId,
+                'user_id' => $this->userId,
                 'promotion' => json_encode($promotion),
                 'discount' => $discount,
                 'total' => $total,
@@ -135,6 +137,7 @@ class OrderService implements OrderServiceInterface
 
     public function getInfoCourseByCart($ids)
     {
+        $base = 0; //base price
         $total = 0;
         $courses = [];
         foreach ($ids as $id) {
@@ -143,16 +146,44 @@ class OrderService implements OrderServiceInterface
                 $course = $this->courseRepository->find($cart->course_id);
                 if ($course['success']) {
                     $course = $course['course'];
+                    $base += $course['fake_cost'];
                     $total += $course['cost'];
                     $courses[] = [
                         'course_id' => $course['id'],
                         'thumbnail' => $course['thumbnail'],
                         'course_name' => $course['name'],
+                        'lecturer' => $course['lecturer'],
                         'cost' => $course['cost'],
+                        'duration' => $course['duration'],
                     ];
                 }
             }
         }
-        return [$courses, $total];
+        return [$courses, $base, $total];
+    }
+    public function bill($orderId)
+    {
+        $order = $this->orderRepository->getWithDetails($orderId);
+        $order->total = NumberFormat::VND($order->total);
+        // $order->where('user_id', $this->userId);
+
+
+        foreach ($order->details as $detail) {
+            $detail->cost = NumberFormat::VND($detail->cost);
+            $course = $this->courseRepository->find($detail->course_id);
+            if ($course) {
+                $detail->thumbnail = $course['course']['thumbnail'];
+                $detail->lecturer = $course['course']['lecturer'];
+            }
+        }
+
+        $count = $this->orderDetailRepository->countByOrder($orderId);
+
+        $data = [
+            'total' => $order->total,
+            'details' => $order->details,
+            'count' => $count,
+        ];
+        return $data;
     }
 }

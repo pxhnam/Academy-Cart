@@ -18,4 +18,8 @@ class OrderDetailRepository implements OrderDetailRepositoryInterface
     {
         $this->model::create($data);
     }
+    public function countByOrder($orderId)
+    {
+        return $this->model::where('order_id', $orderId)->count();
+    }
 }

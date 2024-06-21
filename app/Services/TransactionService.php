@@ -91,7 +91,10 @@ class TransactionService implements TransactionServiceInterface
     {
         if ($method === PaymentMethod::VNPAY) {
             $orderId = $request->vnp_TxnRef;
-            $statusCode = $request->vnp_ResponseCode;
+            $statusCode = $request->vnp_ResponseCode == '00' ? true : false;
+        } elseif ($method === PaymentMethod::MOMO) {
+            $orderId = $request->orderId;
+            $statusCode = $request->resultCode == '0' ? true : false;
         }
 
         $order = $this->orderRepository->find($orderId);
@@ -104,7 +107,7 @@ class TransactionService implements TransactionServiceInterface
                     'order_id' => $order->id,
                     'response' => json_encode($request->all())
                 ]);
-                if ($statusCode == '00') {
+                if ($statusCode) {
 
                     $order->state = OrderState::PAID;
                     $order->save();
@@ -132,14 +135,13 @@ class TransactionService implements TransactionServiceInterface
                     $order->save();
                 }
                 DB::commit();
-                return $statusCode == '00' ? $order->id : false;
+                return $statusCode ? [$method, $order->id] : false;
             } catch (\Exception $ex) {
                 DB::rollback();
                 Log::error('VNPay transaction failed: ' . $ex->getMessage());
                 return false;
             }
         }
-
         return false;
     }
 }

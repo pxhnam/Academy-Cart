@@ -30,31 +30,22 @@ class TransactionController extends Controller
     public function vnpayReturn(Request $request)
     {
         $data = $this->vnpayService->response($request);
-        if (is_int($data)) {
-            dd($data);
-            //success
-            // return redirect()->route('checkout');
-        } else {
-            // dd($data);
-            return redirect()->route('checkout')->with([
-                'notify' =>
-                [
-                    'type' => 'error',
-                    'message' => 'Thanh toán thất bại.'
-                ]
-            ]);
-        }
+        return $this->handleResponse($data);
     }
 
     public function momoReturn(Request $request)
     {
         $data = $this->momoService->response($request);
-        if (is_int($data)) {
-            dd($data);
-            //success
-            // return redirect()->route('checkout');
+        return $this->handleResponse($data);
+    }
+
+    public function handleResponse($data)
+    {
+        if ($data) {
+            return redirect()->route('result')->with([
+                'result' => $data
+            ]);
         } else {
-            // dd($data);
             return redirect()->route('checkout')->with([
                 'notify' =>
                 [

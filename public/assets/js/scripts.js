@@ -1,7 +1,5 @@
-const modal = new mdb.Modal($(".modal"));
 const _document = $(document);
-const row = $(".row");
-
+const main = $("main");
 _document.ready(function () {});
 _document.ajaxStart(() => $("#loading").fadeIn());
 _document.ajaxStop(() => $("#loading").fadeOut());
@@ -32,3 +30,11 @@ function Toast({ message = "", type = "info", duration = 5000 }) {
         newToast.timeOut = setTimeout(() => newToast.remove(), duration + 500);
     }
 }
+
+_document.on("click", "#btn-cart", function () {
+    window.location.href = "/gio-hang";
+});
+
+_document.on("click", ".box-avatar-nav", function () {
+    $(".menu-user").toggleClass("show");
+});

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\CartState;
-use App\Enums\CouponType;
 use App\Helpers\APIResponse;
 use App\Helpers\NumberFormat;
 use App\Traits\DiscountTrait;
@@ -49,6 +48,7 @@ class CartService implements CartServiceInterface
                 if ($course['success']) {
                     $course = $course['course'];
                     $course['id'] = $cart->id; #use cart_id
+                    $course['fake_cost'] = NumberFormat::VND($course['fake_cost']);
                     $course['cost'] = NumberFormat::VND($course['cost']);
                     $courses[] = $course;
                 }
@@ -97,28 +97,37 @@ class CartService implements CartServiceInterface
         $codes = $data->codes ?? [];
         $codes = array_map('strtoupper', $codes);
         $codes = array_unique($codes);
+        $basePrice = 0;
+        $totalPrice = 0;
         $discount = 0;
-        $total = 0;
         $coupons = [];
         $message = '';
+        $count = 0;
+        // boxSummary(basicPrice, reducePrice, discount, totalPrice)
         if (!empty($ids)) {
-            $total = $this->makeTotalCarts($ids);
+            list($basePrice, $totalPrice) = $this->makeTotalCarts($ids);
 
             $coupons = [
-                'data' => $this->findValidCouponsByCost($total),
+                'data' => $this->findValidCouponsByCost($totalPrice),
                 'limit' => false
             ];
         }
+
         if (!empty($codes)) {
             foreach ($codes as $key => $code) {
-                $reduce = $this->makeDiscountCost($code, $total);
+                $reduce = $this->makeDiscountCost($code, $totalPrice);
                 if ($reduce) {
                     $discount += $reduce;
-                    list($test, $limit) = $this->limitTest($total, $discount);
+                    list($test, $limit) = $this->limitTest($totalPrice, $discount);
                     if (!$test) {
+                        $count++;
                         $discount = $limit;
                         $coupons['limit'] = true;
-                        break;
+                        // break;
+                        if ($count > 1) {
+                            $message = 'Đã tối đa giới hạn giảm';
+                            unset($codes[$key]);
+                        }
                     }
                 } else {
                     if (!empty($ids)) $message = 'Mã giảm giá không hợp lệ';
@@ -131,9 +140,10 @@ class CartService implements CartServiceInterface
             'info',
             $message,
             [
-                'cost' => NumberFormat::VND($total),
+                'basePrice' => NumberFormat::VND($basePrice),
+                'reducePrice' => NumberFormat::VND($basePrice - $totalPrice),
                 'discount' => NumberFormat::VND($discount),
-                'total' => NumberFormat::VND($total - $discount),
+                'totalPrice' => NumberFormat::VND($totalPrice - $discount),
                 'codes' => $codes,
                 'coupons' => $coupons
             ]
@@ -149,7 +159,7 @@ class CartService implements CartServiceInterface
         $codes = array_map('strtoupper', $codes);
         $codes = array_unique($codes);
         $carts = [];
-        $total = 0;
+        // $total = 0;
         if (!empty($ids)) {
             foreach ($ids as $id) {
                 $cart = $this->cartRepository->findById($id);
@@ -164,7 +174,7 @@ class CartService implements CartServiceInterface
         if (!empty($carts)) {
             Session::put('carts', $carts);
             if (!empty($codes)) {
-                $total = $this->makeTotalCarts($ids);
+                list($basic, $total) = $this->makeTotalCarts($ids);
                 foreach ($codes as $key => $code) {
                     $reduce = $this->makeDiscountCost($code, $total);
                     if ($reduce === 0) {
@@ -191,17 +201,19 @@ class CartService implements CartServiceInterface
 
     public function makeTotalCarts($ids)
     {
-        $total = 0;
+        $basePrice = 0;
+        $totalPrice = 0;
         if (!empty($ids)) {
             foreach ($ids as $id) {
                 $cart = $this->cartRepository->findById($id);
                 $course = $this->courseRepository->find($cart->course_id);
                 if ($course['success']) {
-                    $total += $course['course']['cost'];
+                    $basePrice += $course['course']['fake_cost'];
+                    $totalPrice += $course['course']['cost'];
                 }
             }
         }
-        return $total;
+        return [$basePrice, $totalPrice];
     }
 
     public function listRecommend()

@@ -12,31 +12,33 @@
 @endsection
 
 @section('main')
-    <div class="row">
+    <div class="row" id="list-courses">
     </div>
 @endsection
 
 @section('scripts')
     <script>
+        var listCourses = $('#list-courses');
+
         function loadData() {
             $.ajax({
                 url: "{{ route('courses') }}",
                 type: 'GET',
                 success: (response) => {
-                    row.empty();
+                    listCourses.empty();
                     if (response.success) {
                         let data = response.courses;
                         if (data.length === 0) {
-                            row.append(`<idv class='text-center'>KHÔNG CÓ KHÓA HỌC NÀO!</div>`);
+                            listCourses.append(`<idv class='text-center'>KHÔNG CÓ KHÓA HỌC NÀO!</div>`);
                         } else {
                             let courses = '';
                             $.each(data, (index, course) =>
                                 courses += card(course.id, course.name, course.thumbnail)
                             );
-                            row.append(courses);
+                            listCourses.append(courses);
                         }
                     } else {
-                        row.append(`<idv class='text-center'>${response.message}</div>`);
+                        listCourses.append(`<idv class='text-center'>${response.message}</div>`);
                     }
                 },
                 error: (xhr, status, error) => {

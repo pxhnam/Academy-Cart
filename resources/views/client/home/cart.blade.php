@@ -7,31 +7,109 @@
 @endsection
 
 @section('main')
-    <section class="h-100 gradient-custom">
-        <div class="container py-5">
-            <div class="row d-flex justify-content-center my-4">
+    <div class="row" id="list-courses">
+        <div>
+            <button class="btn-back mt-3">
+                <i class="fa-solid fa-arrow-left"></i>
+                &nbsp;Quay lại
+            </button>
+        </div>
+        <h1 class="fw-bold mt-5 mb-3">Giỏ hàng</h1>
+        <div class="col-xxl-8 col-xl-12">
+            <ul class="responsive-table table-cart">
+                <li class="table-header">
+                    <div class="col col-1 d-flex gap-2">
+                        <input type="checkbox" id="checkAll" class="form-check-input select-courses m-0" />
+                        <label for="checkAll"> Tất cả (<span class="count-course">0</span> khóa học) </label>
+                    </div>
+                    <div class="col col-4" id="btn-remove">Xóa</div>
+                </li>
+                <div id="body-table" class="overflow-y-auto" style="max-height: 555px"></div>
+            </ul>
+        </div>
+        <div class="col-xxl-4 col-xl-12">
+            <div class="box-coupons box-shadow bg-light p-3 rounded">
+                <div class="d-flex align-items-center mb-2">
+                    <img src="./assets/icons/ticket.svg" height="30px" alt="" />
+                    <span class="fs-5 fw-bold ms-2">Mã khuyến mãi</span>
+                </div>
+                <div class="form-coupon mb-3">
+                    <input type="text" id="inputCode" placeholder="Nhập mã giảm giá" />
+                    <button id="btn-apply" type="btn">Áp dụng</button>
+                </div>
+                <div class="d-flex flex-column gap-2 overflow-y-auto pb-1" id="list-coupons" style="max-height: 270px">
+                </div>
+            </div>
+            <div class="box-summary box-shadow bg-light p-3 mt-3 rounded">
+                <div class="d-flex justify-content-between fw-medium mb-3">
+                    <span>Giá niêm yết:</span>
+                    <span class="base-price">0 đ</span>
+                </div>
+                <div class="d-flex justify-content-between fw-medium mb-3">
+                    <span>Giảm giá:</span>
+                    <span class="reduce-price">0 đ</span>
+                </div>
+                <div class="d-flex justify-content-between fw-medium mb-3">
+                    <span>Mã ưu đãi:</span>
+                    <span class="discount">0 đ</span>
+                </div>
+                <hr />
+                <div class="d-flex justify-content-between fw-bold">
+                    <span>Tổng tiền:</span>
+                    <span class="total-price">0 đ</span>
+                </div>
+            </div>
+            <div class="col-md-12">
+                <button id="btn-checkout" class="btn btn-info text-white text-uppercase fw-bold my-3 w-100 py-2">
+                    Tiếp Tục
+                </button>
             </div>
         </div>
-    </section>
+        <div class="col-md-12 mt-5">
+            <h3 class="fw-bold">Các khóa học phổ biến khác:</h3>
+            <div class="row list-recommend overflow-hidden overflow-x-auto flex-nowrap p-3">
+
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('scripts')
     <script>
         var ids = new Set();
         var codes = new Set();
-        let inputSelectCourse, inputSelectCourses, btnCheckout, btnApply, costCourse, costDiscount, totalCourse;
+        var listCourses = $('#list-courses');
+        var listCoupons = $('#list-coupons');
+        var listRecommend = $('.list-recommend');
+        // var tableCart = $('.table-cart');
+        var bodyTable = $('#body-table');
+        var btnApply = $('#btn-apply');
+        var inputCode = $('#inputCode');
+        var countCourse = $('.count-course');
+        var inputSelectCourses = $('input.select-courses');
+        var btnCheckout = $('#btn-checkout');
+        var basePrice = $('.base-price');
+        var reducePrice = $('.reduce-price');
+        var discount = $('.discount');
+        var totalPrice = $('.total-price');
+        var btnRemove = $('#btn-remove'); //remove All
+        let inputSelectCourse;
         _document.ready(function() {
             loadData();
-        })
+            loadRecommend();
+        });
+
+        _document.on('click', '.btn-back', function() {
+            window.location.href = '/';
+        });
+
+        _document.on('click', '.btn-discovery', function() {
+            window.location.href = '/';
+        });
 
         function init() {
             inputSelectCourse = $('input.select-course');
-            inputSelectCourses = $('input.select-courses');
-            costCourse = $('#costCourse');
-            costDiscount = $('#costDiscount');
-            totalCourse = $('#totalCourse');
-            btnCheckout = $('#btnCheckout');
-            btnApply = $('#btn-apply');
+
         }
 
         function loadData() {
@@ -40,36 +118,69 @@
                 type: 'GET',
                 success: (response) => {
                     // console.log(response);
-                    row.empty();
+                    //listCourses.empty();
                     if (response.success) {
                         let carts = response.data;
                         let data = '';
                         $.each(carts, (index, cart) =>
-                            data += boxItem(
+                            data += boxCourse(
                                 cart.id,
                                 cart.thumbnail,
                                 cart.name,
                                 cart.lecturer,
-                                cart.cost
+                                cart.fake_cost,
+                                cart.cost,
+                                cart.duration
                             )
                         )
-                        row.append(boxCart(data));
-                        row.append(boxSummary());
+                        bodyTable.append(data);
                         Summary();
+                        // listCourses.append(boxCart(data));
+                        // listCourses.append(boxSummary());
+                        // Summary();
                         init();
                     } else {
-                        row.append(boxEmpty());
+                        main.empty().append(boxEmpty()).css({
+                            'display': 'flex',
+                            'justify-content': 'center',
+                            'align-items': 'center'
+                        });
                     }
-                }
+                },
+                error: () => {}
+            })
+        }
+
+        function loadRecommend() {
+            $.ajax({
+                url: "{{ route('carts.recommend') }}",
+                type: 'GET',
+                success: (response) => {
+                    let data = '';
+                    $.each(response, (index, course) => {
+                        data += boxRecommend(course.id, course.thumbnail, course.name, course.duration,
+                            course.lecturer);
+                    });
+                    listRecommend.append(data);
+                },
+                error: () => {}
             })
         }
 
         function updateCourseChecked() {
             ids.clear();
-            let selectedCourses = $('input.select-course:checked');
-            selectedCourses.each(function() {
-                ids.add($(this).closest('tr').data('id'));
+            let selected = $('input.select-course:checked');
+            countCourse.text(selected.length);
+            selected.each(function() {
+                let id = $(this).closest('.table-row').data('id');
+                ids.add(id);
             });
+
+            if (selected.length > 0) {
+                btnRemove.addClass('text-danger');
+            } else {
+                btnRemove.removeClass('text-danger');
+            }
             Summary();
         }
 
@@ -102,18 +213,25 @@
                 success: (response) => {
                     // console.log(response);
                     if (response.success) {
-                        costCourse.text(response?.data.cost);
-                        costDiscount.text(response?.data.discount);
-                        totalCourse.text(response?.data.total);
-                        $('.list-coupons').empty();
+                        // console.log(response);
+                        boxSummary(
+                            response.data.basePrice,
+                            response.data.reducePrice,
+                            response.data.discount,
+                            response.data.totalPrice
+                        );
+                        //boxSummary(basicPrice, reducePrice, discount, totalPrice)
+                        listCoupons.empty();
 
                         codes = new Set(response.data.codes ?? []);
                         if (response.data?.coupons?.data?.length !== 0) {
+                            let data = '';
                             $.each(response.data?.coupons?.data, (index, value) => {
                                 let isChecked = response.data?.codes.includes(value.code);
                                 let isMax = response.data.coupons.limit;
-                                $('.list-coupons').append(boxCoupons(value.code, isChecked, isMax));
+                                data += boxCoupons(value.code, value.description, isChecked, isMax);
                             })
+                            listCoupons.append(data);
                         }
                     } else {}
 
@@ -126,17 +244,15 @@
             });
         }
 
-        _document.on('click', '#btn-apply', function() {
-            let code = $('#code').val();
-            if (code.trim() === '') return false;
-            $('#code').val('');
-            codes.add(code);
+        btnApply.click(function() {
+            if (inputCode.val().trim() === '') return false;
+            codes.add(inputCode.val());
             Summary();
-        });
+            inputCode.val('');
+        })
 
-        _document.on('click', '.btn-remove', function() {
-            let _this = $(this).closest('tr');
-            let id = _this.data('id');
+        //function remove course
+        function removeCourse(id, callback) {
             $.ajax({
                 url: "{{ route('carts.remove') }}",
                 type: 'POST',
@@ -144,27 +260,65 @@
                     id
                 },
                 success: (response) => {
-                    if (response.success) {
-                        if (response.data) {
-                            _this.remove();
-                            updateCourseChecked();
-                        } else {
-                            loadData();
-                        }
-                        Toast({
-                            message: response.message,
-                            type: response.type
-                        });
-                    }
+                    callback(response);
                 },
                 error: (xhr, status, error) => {
                     console.error(`message: ${error}`);
                 }
             });
+        }
+
+        //Remove a course
+        _document.on('click', '.btn-remove', function() {
+            let _this = $(this).closest('.table-row');
+            let id = _this.data('id');
+            removeCourse(id, (response) => {
+                if (response.success) {
+                    if (response.data) {
+                        _this.remove();
+                        updateCourseChecked();
+                    } else {
+                        loadData();
+                    }
+                    Toast({
+                        type: response.type,
+                        message: response.message
+                    })
+                }
+            });
         });
 
-        _document.on('click', '#btnCheckout', function() {
-            //updateCodeChecked();
+        //Remove all courses
+        btnRemove.click(function() {
+            let selected = $('input.select-course:checked');
+            let completed = 0;
+            let reload = false;
+            selected.each(function() {
+                let _this = $(this).closest('.table-row');
+                let id = _this.data('id');
+                removeCourse(id, (response) => {
+                    if (response.success) {
+                        if (response.data) {
+                            reload = true;
+                            _this.remove();
+                        } else {
+                            reload = false;
+                            loadData();
+                        }
+                    }
+                    completed++;
+                    if (completed === selected.length) {
+                        if (reload) updateCourseChecked();
+                        Toast({
+                            type: response.type,
+                            message: response.message
+                        })
+                    }
+                });
+            });
+        });
+
+        btnCheckout.click(function() {
             $.ajax({
                 url: "{{ route('carts.checkout') }}",
                 type: 'POST',
@@ -201,123 +355,90 @@
             updateCourseChecked();
         });
 
+
+
         //Render UI
-        function boxItem(id, thumbnail, name, author, cost) {
-            return `<tr data-id="${id}">
-                        <th scope="row">
-                            <input type="checkbox" class="form-check-input select-course"
-                                name="select-course"/>
-                        </th>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <img src="${thumbnail}" alt=""
-                                    class="pic-in-cart" />
-                                <div class="ms-3">
-                                    <p class="fw-bold mb-1">${name}</p>
-                                    <p class="text-muted mb-0">${author}</p>
-                                </div>
-                            </div>
-                        </td>
-                        <td>${cost}</td>
-                        <td>
-                            <button type="button" data-mdb-button-init data-mdb-ripple-init
-                                class="btn btn-danger btn-sm btn-rounded btn-remove">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>`;
-        }
-
-        function boxCart(item) {
-            return `<div class="col-xxl-8 col-xl-12">
-                        <div class="card mb-4">
-                            <div class="card-header py-3">
-                                <h5 class="mb-0">Giỏ Hàng</h5>
-                            </div>
-                            <div class="card-body">
-                                <table class="table align-middle mb-0 bg-white text-center table-responsive">
-                                    <thead class="bg-light">
-                                        <tr>
-                                            <th scope="col">
-                                                <input type="checkbox" class="form-check-input select-courses" id='select-courses' name="select-courses" />
-                                                <label for='select-courses'>Tất cả</label>
-                                            </th>
-                                            <th scope="col">Tên khóa học</th>
-                                            <th scope="col">Giá</th>
-                                            <th scope="col"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${item}
-                                    </tbody>
-                                </table>
-                            </div>
+        function boxRecommend(id, thumbnail, name, duration, author) {
+            return (`<div class="col-lg-3 col-md-6" data-id="${id}">
+                    <div class="shadow bg-light rounded m-5 m-md-2">
+                        <img src="${thumbnail}" alt="" height="150px" class="w-100 rounded" />
+                        <div class="p-2">
+                            <h5 class="fw-bold"><a href='#' class='text-decoration-none'>${name}</a></h5>
+                            <p class="mb-0">
+                                <i class="fa-regular fa-clock"></i> ${duration} giờ
+                            </p>
+                            <p class="mb-0">Bởi ${author}</p>
                         </div>
-                    </div>`;
+                    </div>
+                </div>`);
         }
 
-        function boxSummary() {
-            return `<div class="col-xxl-4 col-xl-12">
-                        <div class="card mb-4">
-                            <div class="card-header py-3">
-                                <h5 class="mb-0">Tóm tắt đơn hàng</h5>
-                            </div>
-                            <div class="card-body">
-                                <ul class="list-group list-group-flush">
-                                    <li
-                                        class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 pb-0">
-                                        Khóa học
-                                        <span id='costCourse'>0 đ</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                        <span>Giảm giá: </span>
-                                        <span id='costDiscount'>0 đ</span>
-                                    </li>
-                                    <li class="list-group-item px-0">
-                                        <div class="input-group mb-3">
-                                            <input type="text" id="code" class="form-control"
-                                                placeholder="Mã giảm giá" />
-                                            <button class="btn btn-outline-secondary" type="button" data-mdb-ripple-init
-                                                data-mdb-ripple-color="dark" id="btn-apply">
-                                                Áp dụng
-                                            </button>
-                                        </div>
-                                        <ul class="list-coupons">
-                                        </ul>
-                                    </li>
-                                    <li
-                                        class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 mb-3">
-                                        <div>
-                                            <strong>Tổng giá trị đơn hàng</strong>
-                                        </div>
-                                        <span><strong id='totalCourse'>0 đ</strong></span>
-                                    </li>
-                                </ul>
-                                <button type="button" data-mdb-button-init data-mdb-ripple-init
-                                    id='btnCheckout'
-                                    class="btn btn-primary btn-lg btn-block">
-                                    THANH TOÁN
-                                </button>
-                            </div>
-                        </div>
-                    </div>`;
+        function boxCourse(id, thumbnail, name, author, fake_cost, cost, duration) {
+            return (`<li class="table-row" data-id="${id}">
+                         <div class="col col-1">
+                             <input type="checkbox" class="form-check-input select-course mt-0" />
+                             <img src="${thumbnail}" height="150px" alt="" />
+                             <div class="info-course">
+                                 <p class="fw-bold fs-5">${name}</p>
+                                 <p class="text-body-tertiary">
+                                     <i class="fa-regular fa-clock"></i> ${duration} giờ
+                                 </p>
+                                 <p class="text-body-tertiary">Bởi ${author}</p>
+                             </div>
+                         </div>
+                         <div class="col col-2 fw-bold">
+                             <p class="text-dash">${fake_cost}</p>
+                             <p>${cost}</p>
+                         </div>
+                         <div class="col col-4">
+                             <button type="button" class="btn btn-danger btn-remove">
+                                 <i class="fa-solid fa-trash"></i>
+                             </button>
+                         </div>
+                     </li>`);
         }
 
 
-        function boxCoupons(code, isChecked = false, isMax = false) {
-            return (`
-                    <div class="form-check">
-                      <input class="form-check-input select-code" type="checkbox" id="${code}" value="${code}" ${isChecked? 'checked': ''}
-                      ${isMax && !isChecked ? 'disabled': ''}/>
-                      <label class="form-check-label" for="${code}"> ${code} </label>
-                    </div>`);
+        function boxSummary(base, reduce, dis, total) {
+            basePrice.text(base);
+            reducePrice.text(reduce);
+            discount.text(dis);
+            totalPrice.text(total);
+        }
+
+
+        function boxCoupons(code, desc, isChecked = false, disable = false) {
+            return (`<div class="d-flex justify-content-between align-items-center border p-2 rounded">
+                         <div class="form-check">
+                             <input class="form-check-input select-code"
+                                 type="checkbox"
+                                 value="${code}"
+                                 id="${code}"
+                                 ${isChecked? 'checked': ''}
+                                 ${disable && !isChecked ? 'disabled': ''}/>
+                             <label class="form-check-label w-100" for="${code}">
+                                 ${code}
+                             </label>
+                         </div>
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                             stroke="currentColor" class="icon-info" title="${desc}">
+                             <path stroke-linecap="round" stroke-linejoin="round"
+                                 d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                         </svg>
+                     </div>`);
         }
 
         function boxEmpty() {
-            return (`<div class='text-center text-uppercase'>
-                <p>Giỏ Hàng Trống</p>
-                <p><a href='/'>Trang Chủ</a></p>
-                </div>`);
+            return (`<div class="text-center">
+                         <div>
+                            <img src="./assets/icons/cart-empty.svg" alt="" />
+                         </div>
+                         <p>Giỏ hàng của bạn đang trống.</p>
+                         <p>Hãy thêm khóa học vào giỏ hàng nhé!</p>
+                         <button class="btn-discovery btn btn-info text-white">
+                             Khám phá khóa học
+                         </button>
+                     </div>`);
         }
     </script>
 @endsection

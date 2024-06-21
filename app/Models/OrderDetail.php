@@ -14,4 +14,8 @@ class OrderDetail extends Model
         'course_name',
         'cost',
     ];
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
 }

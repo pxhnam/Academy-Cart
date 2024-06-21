@@ -44,43 +44,37 @@
                 <form method="POST">
                     @csrf
 
-                    <div class="form-outline mb-4" data-mdb-input-init
-                        @error('name')
-                        data-mdb-tooltip-init
-                        data-mdb-placement="right"
-                        title="{{ $message }}"
-                        @enderror>
-                        <input type="text" id="name" name="name"
+                    <div class="form-floating mb-4">
+                        <input type="text" id="name" name="name" placeholder=""
                             class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" />
-                        <label class="form-label" for="name">Name</label>
+                        <label for="name">Name</label>
+                        @error('name')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
                     </div>
 
-                    <div class="form-outline mb-4" data-mdb-input-init
-                        @error('email')
-                        data-mdb-tooltip-init
-                        data-mdb-placement="right"
-                        title="{{ $message }}"
-                        @enderror>
-                        <input type="text" id="email" name="email"
+                    <div class="form-floating mb-4">
+                        <input type="text" id="email" name="email" placeholder=""
                             class="form-control @error('email') is-invalid @enderror" value="{{ old('email') }}" />
-                        <label class="form-label" for="email">Email</label>
+                        <label for="email">Email</label>
+                        @error('email')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
                     </div>
 
-                    <div class="form-outline mb-4" data-mdb-input-init
-                        @error('password')
-                        data-mdb-tooltip-init
-                        data-mdb-placement="right"
-                        title="{{ $message }}"
-                        @enderror>
-                        <input type="password" id="password" name="password"
+                    <div class="form-floating mb-4">
+                        <input type="password" id="password" name="password" placeholder=""
                             class="form-control @error('password') is-invalid @enderror" />
-                        <label class="form-label" for="password">Mật khẩu</label>
+                        <label for="password">Mật khẩu</label>
+                        @error('password')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
                     </div>
 
-                    <div class="form-outline mb-4" data-mdb-input-init>
-                        <input type="password" id="password_confirmation" name="password_confirmation"
+                    <div class="form-floating mb-4">
+                        <input type="password" id="password_confirmation" name="password_confirmation" placeholder=""
                             class="form-control" />
-                        <label class="form-label" for="password_confirmation">Xác nhận mật khẩu</label>
+                        <label for="password_confirmation">Xác nhận mật khẩu</label>
                     </div>
 
                     <span class="d-inline-block">
@@ -98,25 +92,5 @@
 @endsection
 
 @section('scripts')
-    <script>
-        $(document).ready(function() {
-            $('input:text')[0].focus();
-            $('input').each(function() {
-                if ($(this).hasClass('is-invalid')) {
-                    $(this).focus();
-                    return false;
-                }
-            });
-        });
-
-        $(document).on('input', '.form-outline input', function() {
-            if ($(this).val()) {
-                $(this).removeClass('is-invalid');
-                $(this).closest('.form-outline').removeAttr('data-mdb-original-title');
-            } else {
-                $(this).addClass('is-invalid');
-            }
-            $('.text-danger').remove();
-        })
-    </script>
+    <script></script>
 @endsection

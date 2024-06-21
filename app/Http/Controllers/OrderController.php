@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
 use App\Enums\PaymentMethod;
 use Illuminate\Http\Request;
-use chillerlan\QRCode\QRCode;
-use chillerlan\QRCode\QROptions;
 use App\Http\Controllers\Controller;
-use chillerlan\QRCode\Common\EccLevel;
-use chillerlan\QRCode\Output\QROutputInterface;
+use App\Models\OrderDetail;
 use App\Services\Interfaces\MomoServiceInterface;
 use App\Services\Interfaces\OrderServiceInterface;
 use App\Services\Interfaces\VNPayServiceInterface;
@@ -55,11 +53,20 @@ class OrderController extends Controller
                         );
                     }
                 case PaymentMethod::MOMO:
-                    $response = $this->momoService->create($request);
-                    // dd($response);
-                    return redirect($response['payUrl']);
-                    // Tạo mã QR từ URL
-
+                    $order = $this->orderService->createOrder();
+                    if ($order) {
+                        $request->merge([
+                            'order_id' => $order['order_id'],
+                            'total' => $order['total']
+                        ]);
+                        $response = $this->momoService->create($request);
+                        // dd($response);
+                        return redirect($response['payUrl']);
+                        // Tạo mã QR từ URL
+                    }
+                    return redirect()->back()->with(
+                        ['notify' => ['type' => 'error', 'message' => 'Có lỗi xảy ra! Vui lòng thử lại sau.']]
+                    );
 
                     // $qrcode = new QRCode();
                     // $image = $qrcode->render($response['qrCodeUrl']);
@@ -72,21 +79,31 @@ class OrderController extends Controller
                     // );
                 case PaymentMethod::BANK:
 
-                    $response = $this->momoService->create($request);
-                    if ($response['errorCode'] == 0) {
-                        dd($response['qrCodeUrl']);
-                        return response()->json(['qrCodeUrl' => $response['qrCodeUrl']]);
-                    } else {
-                        return response()->json(['error' => $response['localMessage']], 400);
-                    }
-                    // return redirect()->back()->with(
-                    //     ['notify' => ['type' => 'info', 'message' => PaymentMethod::QR_Momo . ' chưa được hỗ trợ.']]
-                    // );
+                    return redirect()->back()->with(
+                        ['notify' => ['type' => 'info', 'message' => PaymentMethod::BANK . ' chưa được hỗ trợ.']]
+                    );
                 default:
                     return redirect()->back()->withErrors(['method' => 'Không rõ phương thức thanh toán.']);
             }
         } else {
             return redirect()->back()->withErrors(['method' => 'Vui lòng chọn phương thức thanh toán.']);
+        }
+    }
+
+    public function result()
+    {
+        // session()->put('result', ['MOMO', 31]);
+        if (session()->has('result')) {
+            $data = session('result');
+            if (is_array($data)) {
+                list($method, $orderId) = $data;
+                $data = $this->orderService->bill($orderId);
+                $data['method'] = $method;
+            }
+
+            return view('client.home.result', compact('data'));
+        } else {
+            return redirect()->route('home');
         }
     }
 }

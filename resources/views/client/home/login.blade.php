@@ -44,26 +44,22 @@
                 <form method="POST">
                     @csrf
 
-                    <div class="form-outline mb-4" data-mdb-input-init
-                        @error('email')
-                        data-mdb-tooltip-init
-                        data-mdb-placement="right"
-                        title="{{ $message }}"
-                        @enderror>
-                        <input type="text" id="email" name="email"
+                    <div class="form-floating mb-4">
+                        <input type="text" id="email" name="email" placeholder="" autofocus
                             class="form-control @error('email') is-invalid @enderror" value="{{ old('email') }}" />
-                        <label class="form-label" for="email">Email</label>
+                        <label for="email">Email</label>
+                        @error('email')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
                     </div>
 
-                    <div class="form-outline mb-4" data-mdb-input-init
-                        @error('password')
-                        data-mdb-tooltip-init
-                        data-mdb-placement="right"
-                        title="{{ $message }}"
-                        @enderror>
-                        <input type="password" id="password" name="password"
+                    <div class="form-floating mb-4">
+                        <input type="password" id="password" name="password" placeholder=""
                             class="form-control @error('password') is-invalid @enderror" />
-                        <label class="form-label" for="password">Mật khẩu</label>
+                        <label for="password">Mật khẩu</label>
+                        @error('password')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
                     </div>
 
                     <div class="row mb-4">
@@ -104,25 +100,5 @@
 @endsection
 
 @section('scripts')
-    <script>
-        $(document).ready(function() {
-            $('input:text')[0].focus();
-            $('input').each(function() {
-                if ($(this).hasClass('is-invalid')) {
-                    $(this).focus();
-                    return false;
-                }
-            })
-        });
-
-        $(document).on('input', '.form-outline input', function() {
-            if ($(this).val()) {
-                $(this).removeClass('is-invalid');
-                $(this).closest('.form-outline').removeAttr('data-mdb-original-title');
-            } else {
-                $(this).addClass('is-invalid');
-            }
-            $('.text-danger').remove();
-        });
-    </script>
+    <script></script>
 @endsection

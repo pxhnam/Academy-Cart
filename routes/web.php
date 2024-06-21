@@ -12,33 +12,36 @@ use App\Http\Controllers\TransactionController;
 Route::prefix('')->group(function () {
 
     #Home
-    Route::prefix('')->name('')->group(function () {
+    // Route::prefix('')->name('')->group(function () {
+    // });
 
-        #Index
-        Route::get('', [HomeController::class, 'index'])->name('home');
+    #Index
+    Route::get('', [HomeController::class, 'index'])->name('home');
 
-        Route::get('thanh-toan', [OrderController::class, 'index'])->middleware(['checkout', 'auth'])->name('checkout');
-        Route::post('thanh-toan', [OrderController::class, 'checkout'])->middleware(['checkout', 'auth']);
+    Route::get('thanh-toan', [OrderController::class, 'index'])->middleware(['checkout', 'auth'])->name('checkout');
+    Route::post('thanh-toan', [OrderController::class, 'checkout'])->middleware(['checkout', 'auth']);
 
-        Route::get('vnpay-return', [TransactionController::class, 'vnpayReturn'])->middleware('auth')->name('vnpay.return');
-        Route::get('momo-return', [TransactionController::class, 'momoReturn'])->middleware('auth')->name('momo.return');
+    Route::get('ket-qua', [OrderController::class, 'result'])->middleware('auth')->name('result');
 
-        #Login
-        Route::get('dang-nhap', [HomeController::class, 'login'])->name('login');
-        Route::post('dang-nhap', [HomeController::class, 'handleLogin']);
+    Route::get('vnpay-return', [TransactionController::class, 'vnpayReturn'])->middleware('auth')->name('vnpay.return');
+    Route::get('momo-return', [TransactionController::class, 'momoReturn'])->middleware('auth')->name('momo.return');
 
-        #Register
-        Route::get('dang-ky', [HomeController::class, 'register'])->name('register');
-        Route::post('dang-ky', [HomeController::class, 'handleRegister']);
+    #Login
+    Route::get('dang-nhap', [HomeController::class, 'login'])->name('login');
+    Route::post('dang-nhap', [HomeController::class, 'handleLogin']);
 
-        #Logout
-        Route::get('logout', [HomeController::class, 'logout'])->name('logout');
-    });
+    #Register
+    Route::get('dang-ky', [HomeController::class, 'register'])->name('register');
+    Route::post('dang-ky', [HomeController::class, 'handleRegister']);
+
+    #Logout
+    Route::get('logout', [HomeController::class, 'logout'])->name('logout');
+
 
     Route::get('gio-hang', [CartController::class, 'index'])->name('cart')->middleware('auth');
 });
 
-
+//API
 Route::prefix('cart')->middleware('authenticate')->name('carts.')->group(function () {
     Route::get('get', [CartController::class, 'list'])->name('list');
     Route::get('summary', [CartController::class, 'summary'])->name('summary');

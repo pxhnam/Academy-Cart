@@ -22,7 +22,13 @@ class OrderRepository implements OrderRepositoryInterface
     {
         return $this->model::find($id);
     }
-
+    public function getWithDetails($id)
+    {
+        return $this->model::with('details')
+            ->select('id', 'discount', 'total')
+            ->where('user_id', $this->userId)
+            ->find($id);
+    }
     public function create($data)
     {
         return $this->model::create($data);
