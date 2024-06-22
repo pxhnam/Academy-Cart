@@ -50,29 +50,29 @@ class MomoService implements MomoServiceInterface
         curl_close($ch);
         return $result;
     }
+
     public function create($request)
     {
 
         $partnerCode = $this->partnerCode;
         $accessKey = $this->accessKey;
         $secretKey = $this->secretKey;
-        $orderInfo = "Thanh toán qua MoMo cho đơn hàng #" . $request->order_id;
-        $amount = $request->total;
-        $orderId = $request->order_id;
+        $orderInfo = "Thanh toán cho đơn hàng #" . $request->order_id;
+        $amount = $request->total . '';
+        // $orderId = $request->order_id . '';
         $redirectUrl = $this->returnUrl;
         $ipnUrl = $this->returnUrl;
         $extraData = "";
-
-        $requestId = $request->order_id;
+        $orderId = time() . "";
+        $requestId = time() . "";
         $requestType = "captureWallet";
-        // $extraData = ("");
         //before sign HMAC SHA256 signature
         $rawHash = "accessKey=" . $accessKey . "&amount=" . $amount . "&extraData=" . $extraData . "&ipnUrl=" . $ipnUrl . "&orderId=" . $orderId . "&orderInfo=" . $orderInfo . "&partnerCode=" . $partnerCode . "&redirectUrl=" . $redirectUrl . "&requestId=" . $requestId . "&requestType=" . $requestType;
         $signature = hash_hmac("sha256", $rawHash, $secretKey);
         $data = array(
             'partnerCode' => $partnerCode,
             'partnerName' => "MOMO",
-            "storeId" => "MomoTestStore",
+            "storeId" => "TrendyAcademy",
             'requestId' => $requestId,
             'amount' => $amount,
             'orderId' => $orderId,
@@ -110,33 +110,16 @@ class MomoService implements MomoServiceInterface
         $extraData = $request->extraData;
         $m2signature = $request->signature; //MoMo signature
 
-
         //Checksum
         $rawHash = "accessKey=" . $accessKey . "&amount=" . $amount . "&extraData=" . $extraData . "&message=" . $message . "&orderId=" . $orderId . "&orderInfo=" . $orderInfo .
             "&orderType=" . $orderType . "&partnerCode=" . $partnerCode . "&payType=" . $payType . "&requestId=" . $requestId . "&responseTime=" . $responseTime .
             "&resultCode=" . $resultCode . "&transId=" . $transId;
 
         $partnerSignature = hash_hmac("sha256", $rawHash, $secretKey);
-
-        // echo "<script>console.log('Debug huhu Objects: " . $rawHash . "' );</script>";
-        // echo "<script>console.log('Debug huhu Objects: " . $partnerSignature . "' );</script>";
-
-
         if ($m2signature == $partnerSignature) {
-            // if ($resultCode == '0') {
-            // dd('true');
-            // $result = '<div class="alert alert-success"><strong>Payment status: </strong>Success</div>';
-            // } else {
-            // dd($request->all());
-            // return false;
-            // $result = '<div class="alert alert-danger"><strong>Payment status: </strong>' . $message . '/' . $localMessage . '</div>';
-            // }
             return $this->transactionService->create($request, PaymentMethod::MOMO);
         } else {
             return false;
-            // dd($request->all());
-            // dd('cuc');
-            // $result = '<div class="alert alert-danger">This transaction could be hacked, please check your signature and returned signature</div>';
         }
     }
 }

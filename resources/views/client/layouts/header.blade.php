@@ -168,6 +168,7 @@
                         </div>
 
                         <ul class="menu-user">
+                            <li><a class="menu-item" href="#">Xin chào, {{ Auth::user()->name }}</a></li>
                             <li><a class="menu-item" href="#">Đổi Mật Khẩu</a></li>
                             <li><a class="menu-item" href="#">Đơn hàng</a></li>
                             <li><a class="menu-item" href="{{ route('logout') }}">Đăng Xuất</a></li>

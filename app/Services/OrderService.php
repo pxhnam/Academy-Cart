@@ -17,6 +17,7 @@ use App\Repositories\Interfaces\CouponRepositoryInterface;
 use App\Repositories\Interfaces\CourseRepositoryInterface;
 use App\Repositories\Interfaces\OrderDetailRepositoryInterface;
 use App\Repositories\Interfaces\DiscountConditionRepositoryInterface;
+use Exception;
 
 class OrderService implements OrderServiceInterface
 {
@@ -51,26 +52,30 @@ class OrderService implements OrderServiceInterface
 
     public function show()
     {
-        $ids = Session::get('carts') ?? [];
-        $codes = Session::get('codes') ?? [];
-        $discount = 0;
+        try {
+            $ids = Session::get('carts') ?? [];
+            $codes = Session::get('codes') ?? [];
+            $discount = 0;
 
-        list($carts, $base, $total) = $this->getInfoCourseByCart($ids);
+            list($carts, $base, $total) = $this->getInfoCourseByCart($ids);
 
-        foreach ($carts as &$cart) {
-            $cart['cost'] = NumberFormat::VND($cart['cost']);
+            foreach ($carts as &$cart) {
+                $cart['cost'] = NumberFormat::VND($cart['cost']);
+            }
+
+            $discount = $this->makeDiscount($codes, $total);
+
+            return [
+                'carts' => $carts,
+                'base' => NumberFormat::VND($base),
+                'reduce' => NumberFormat::VND($base - $total),
+                'discount' => NumberFormat::VND($discount),
+                'total' => NumberFormat::VND($total - $discount),
+                'paymentMethods' => PaymentMethod::getValues()
+            ];
+        } catch (Exception $ex) {
+            Log::error($ex->getMessage());
         }
-
-        $discount = $this->makeDiscount($codes, $total);
-
-        return [
-            'carts' => $carts,
-            'base' => NumberFormat::VND($base),
-            'reduce' => NumberFormat::VND($base - $total),
-            'discount' => NumberFormat::VND($discount),
-            'total' => NumberFormat::VND($total - $discount),
-            'paymentMethods' => PaymentMethod::getValues()
-        ];
     }
 
     public function createOrder()
@@ -85,14 +90,9 @@ class OrderService implements OrderServiceInterface
 
             if (!empty($codes)) {
                 foreach ($codes as $code) {
-                    //$discount += $this->makeDiscountCost($code, $total);
                     $promotion[] = $this->couponRepository->findValidCode($code);
                 }
                 $discount = $this->makeDiscount($codes, $total);
-                // list($test, $limit) = $this->limitTest($total, $discount);
-                // if (!$test) {
-                //     $discount = $limit;
-                // }
             }
 
             $total -= $discount;
@@ -115,22 +115,21 @@ class OrderService implements OrderServiceInterface
         });
     }
 
-    public function find($id)
-    {
-        return $this->orderRepository->find($id);
-    }
-
     public function makeDiscount($codes, $total)
     {
         $discount = 0;
-        if (!empty($codes)) {
-            foreach ($codes as $code) {
-                $discount += $this->makeDiscountCost($code, $total);
+        try {
+            if (!empty($codes)) {
+                foreach ($codes as $code) {
+                    $discount += $this->makeDiscountCost($code, $total);
+                }
+                list($test, $limit) = $this->limitTest($total, $discount);
+                if (!$test) {
+                    $discount = $limit;
+                }
             }
-            list($test, $limit) = $this->limitTest($total, $discount);
-            if (!$test) {
-                $discount = $limit;
-            }
+        } catch (Exception $ex) {
+            Log::error($ex->getMessage());
         }
         return $discount;
     }
@@ -140,46 +139,53 @@ class OrderService implements OrderServiceInterface
         $base = 0; //base price
         $total = 0;
         $courses = [];
-        foreach ($ids as $id) {
-            $cart = $this->cartRepository->findById($id);
-            if ($cart) {
-                $course = $this->courseRepository->find($cart->course_id);
-                if ($course['success']) {
-                    $course = $course['course'];
-                    $base += $course['fake_cost'];
-                    $total += $course['cost'];
-                    $courses[] = [
-                        'course_id' => $course['id'],
-                        'thumbnail' => $course['thumbnail'],
-                        'course_name' => $course['name'],
-                        'lecturer' => $course['lecturer'],
-                        'cost' => $course['cost'],
-                        'duration' => $course['duration'],
-                    ];
+        try {
+            foreach ($ids as $id) {
+                $cart = $this->cartRepository->findById($id);
+                if ($cart) {
+                    $course = $this->courseRepository->find($cart->course_id);
+                    if ($course['success']) {
+                        $course = $course['course'];
+                        $base += $course['fake_cost'];
+                        $total += $course['cost'];
+                        $courses[] = [
+                            'course_id' => $course['id'],
+                            'thumbnail' => $course['thumbnail'],
+                            'course_name' => $course['name'],
+                            'lecturer' => $course['lecturer'],
+                            'cost' => $course['cost'],
+                            'duration' => $course['duration'],
+                        ];
+                    }
                 }
             }
+        } catch (Exception $ex) {
+            Log::error($ex->getMessage());
         }
         return [$courses, $base, $total];
     }
+
     public function bill($orderId)
     {
-        $order = $this->orderRepository->getWithDetails($orderId);
-        $order->total = NumberFormat::VND($order->total);
+        try {
+            $order = $this->orderRepository->getWithDetails($orderId);
+            $order->total = NumberFormat::VND($order->total);
 
-        foreach ($order->details as $detail) {
-            $detail->cost = NumberFormat::VND($detail->cost);
-            $course = $this->courseRepository->find($detail->course_id);
-            if ($course) {
-                $detail->thumbnail = $course['course']['thumbnail'];
-                $detail->lecturer = $course['course']['lecturer'];
+            foreach ($order->details as $detail) {
+                $detail->cost = NumberFormat::VND($detail->cost);
+                $course = $this->courseRepository->find($detail->course_id);
+                if ($course) {
+                    $detail->thumbnail = $course['course']['thumbnail'];
+                    $detail->lecturer = $course['course']['lecturer'];
+                }
             }
+            return [
+                'total' => $order->total,
+                'details' => $order->details,
+                'count' => $order->details->count(),
+            ];
+        } catch (Exception $ex) {
+            Log::error($ex->getMessage());
         }
-
-        $data = [
-            'total' => $order->total,
-            'details' => $order->details,
-            'count' => $order->details->count(),
-        ];
-        return $data;
     }
 }

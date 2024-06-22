@@ -211,27 +211,26 @@
                     codes: Array.from(codes)
                 },
                 success: (response) => {
-                    // console.log(response);
                     if (response.success) {
-                        // console.log(response);
+                        let data = response.data;
                         boxSummary(
-                            response.data.basePrice,
-                            response.data.reducePrice,
-                            response.data.discount,
-                            response.data.totalPrice
+                            data.basePrice,
+                            data.reducePrice,
+                            data.discount,
+                            data.totalPrice
                         );
-                        //boxSummary(basicPrice, reducePrice, discount, totalPrice)
                         listCoupons.empty();
 
-                        codes = new Set(response.data.codes ?? []);
-                        if (response.data?.coupons?.data?.length !== 0) {
-                            let data = '';
-                            $.each(response.data?.coupons?.data, (index, value) => {
-                                let isChecked = response.data?.codes.includes(value.code);
-                                let isMax = response.data.coupons.limit;
-                                data += boxCoupons(value.code, value.description, isChecked, isMax);
+                        codes = new Set(data.codes ?? []);
+                        let coupons = data.coupons;
+                        if (coupons.length !== 0) {
+                            let row = '';
+                            $.each(coupons.data, (index, _this) => {
+                                let isChecked = data.codes.includes(_this.code);
+                                let isMax = coupons.limit;
+                                row += boxCoupons(_this.code, _this.description, isChecked, isMax);
                             })
-                            listCoupons.append(data);
+                            listCoupons.append(row);
                         }
                     } else {}
 
@@ -328,7 +327,7 @@
                 },
                 success: (response) => {
                     if (response.success) {
-                        window.location.href = response?.data?.link ?? '';
+                        window.location.href = response.data.link ?? '';
                     } else {
                         response.message && Toast({
                             message: response.message,

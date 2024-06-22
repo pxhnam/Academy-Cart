@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
 use App\Enums\PaymentMethod;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\OrderDetail;
 use App\Services\Interfaces\MomoServiceInterface;
 use App\Services\Interfaces\OrderServiceInterface;
 use App\Services\Interfaces\VNPayServiceInterface;
@@ -60,28 +58,26 @@ class OrderController extends Controller
                             'total' => $order['total']
                         ]);
                         $response = $this->momoService->create($request);
-                        // dd($response);
                         return redirect($response['payUrl']);
-                        // Tạo mã QR từ URL
                     }
                     return redirect()->back()->with(
                         ['notify' => ['type' => 'error', 'message' => 'Có lỗi xảy ra! Vui lòng thử lại sau.']]
                     );
-
-                    // $qrcode = new QRCode();
-                    // $image = $qrcode->render($response['qrCodeUrl']);
-                    // $image = base64_encode($image);
-                    // dd($image);
-                    // dd(base64_encode($image));
-                    // return view('welcome', compact('image'));
-                    // return redirect()->back()->with(
-                    //     ['notify' => ['type' => 'info', 'message' => PaymentMethod::MOMO . ' chưa được hỗ trợ.']]
-                    // );
                 case PaymentMethod::BANK:
+                    $stk = '1042806691';
+                    $bank = 'VCB';
+                    $order = $this->orderService->createOrder();
+                    if ($order) {
+                        $qrPay = 'https://img.vietqr.io/image/' . $bank . '-' . $stk . '-compact.png?' .
+                            'amount=' .
+                            $order['total'] .
+                            '&addInfo=' .
+                            'Thanh toán cho mã đơn hàng: #' .
+                            $order['order_id'];
+                        return response()->json(['success' => true, 'qrPay' => $qrPay]);
+                    }
 
-                    return redirect()->back()->with(
-                        ['notify' => ['type' => 'info', 'message' => PaymentMethod::BANK . ' chưa được hỗ trợ.']]
-                    );
+                    return response()->json(['success' => false, 'message' => 'Không lấy được mã qr']);
                 default:
                     return redirect()->back()->withErrors(['method' => 'Không rõ phương thức thanh toán.']);
             }

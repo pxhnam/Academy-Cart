@@ -41,18 +41,19 @@ class TransactionController extends Controller
 
     public function handleResponse($data)
     {
-        if ($data) {
-            return redirect()->route('result')->with([
-                'result' => $data
-            ]);
-        } else {
-            return redirect()->route('checkout')->with([
-                'notify' =>
-                [
-                    'type' => 'error',
-                    'message' => 'Thanh toán thất bại.'
-                ]
-            ]);
-        }
+        return redirect()->route('result')->with([
+            'result' => $data
+        ]);
+        // if ($data) {
+
+        // } else {
+        //     return redirect()->route('checkout')->with([
+        //         'notify' =>
+        //         [
+        //             'type' => 'error',
+        //             'message' => 'Thanh toán thất bại.'
+        //         ]
+        //     ]);
+        // }
     }
 }

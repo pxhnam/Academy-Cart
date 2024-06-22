@@ -1,8 +1,27 @@
 const _document = $(document);
+const modal = $(".modal");
 const main = $("main");
+const menuUser = $(".menu-user");
+
 _document.ready(function () {});
 _document.ajaxStart(() => $("#loading").fadeIn());
 _document.ajaxStop(() => $("#loading").fadeOut());
+
+_document.on("click", "#btn-cart", function () {
+    window.location.href = "/gio-hang";
+});
+
+_document.on("click", ".box-avatar-nav", function () {
+    menuUser.toggleClass("show");
+});
+_document.on("click", function (event) {
+    if (
+        !$(event.target).closest(".menu-user").length &&
+        !$(event.target).closest(".box-avatar-nav").length
+    ) {
+        menuUser.removeClass("show");
+    }
+});
 
 function Toast({ message = "", type = "info", duration = 5000 }) {
     const notifications = document.querySelector(".notifications");
@@ -31,10 +50,25 @@ function Toast({ message = "", type = "info", duration = 5000 }) {
     }
 }
 
-_document.on("click", "#btn-cart", function () {
-    window.location.href = "/gio-hang";
-});
-
-_document.on("click", ".box-avatar-nav", function () {
-    $(".menu-user").toggleClass("show");
-});
+function openModal({
+    title = "",
+    body = "",
+    ok = "",
+    cancel = "",
+    size = "modal-lg",
+}) {
+    modal.find(".modal-title").text(title);
+    modal.find(".modal-body").empty().append(body);
+    if (ok === "") {
+        modal.find(".btn-primary").remove();
+    } else {
+        modal.find(".btn-primary").text(ok);
+    }
+    if (cancel === "") {
+        modal.find(".btn-secondary").remove();
+    } else {
+        modal.find(".btn-secondary").text(cancel);
+    }
+    modal.find(".modal-dialog").addClass(size);
+    modal.modal("show");
+}

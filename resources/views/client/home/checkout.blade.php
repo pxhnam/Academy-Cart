@@ -97,8 +97,6 @@
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
                 </svg>
-
-
                 Sau khi chuyển khoản quý khách vui lòng chụp lại màn hình thanh
                 toán thành công hoặc biên lai chuyển tiền. Trendemy sẽ liên hệ với
                 quý khách ngay khi nhận được khoản tiền thanh toán thông qua thông
@@ -113,19 +111,37 @@
     <script>
         _document.ready(function() {
             $('#list-method .method-item').on('click', function() {
-                // Xóa class 'active' khỏi tất cả các mục
                 $('#list-method .method-item').removeClass('active');
-
                 $(this).addClass('active');
                 $('#method').val($(this).data('id'));
-                // console.log();
-            });
-            $('.box-avatar-nav').click(function() {
-                $('.menu-user').toggleClass('show');
             });
         });
-        $('#btn-payment').click(function() {
-            console.log($('#method').val());
+        $('#btn-payment').click(function(e) {
+            let method = $('#method').val();
+            if (method == 'BANK') { //|| method == 'MOMO'
+                e.preventDefault();
+                $.ajax({
+                    url: '/thanh-toan',
+                    type: 'POST',
+                    data: {
+                        method
+                    },
+                    success: (response) => {
+                        if (response.success) {
+                            openModal({
+                                title: "Thanh toán hóa đơn",
+                                body: `<div class="text-center">
+                                        <img src="${response.qrPay}" alt="">
+                                        <p class='mt-3'>Thanh toán thành công. Vui lòng nhấn xác nhận để hệ thống kiểm tra.</p>
+                                       </div>`,
+                                ok: "Xác nhận",
+                                cancel: "Hủy",
+                            });
+                        }
+                    },
+                    error: () => {}
+                })
+            }
         });
     </script>
 @endsection

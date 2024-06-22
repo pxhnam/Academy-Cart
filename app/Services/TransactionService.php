@@ -35,65 +35,15 @@ class TransactionService implements TransactionServiceInterface
         $this->couponRepository = $couponRepository;
     }
 
-
-    // public function VNPay($request)
-    // {
-    //     $vnp_HashSecret = 'F4T9SZ131V6BBHJ18IKOUPZXBXJS1MUY';
-    //     $vnp_SecureHash = $request->vnp_SecureHash;
-    //     $inputData = $request->except('vnp_SecureHash', 'vnp_SecureHashType');
-    //     $hashData = "";
-    //     foreach ($inputData as $key => $value) {
-    //         $hashData .= '&' . urlencode($key) . "=" . urlencode($value);
-    //     }
-    //     $hashData = ltrim($hashData, '&');
-    //     $secureHash = hash_hmac('sha512', $hashData, $vnp_HashSecret);
-    //     if ($secureHash == $vnp_SecureHash) {
-    //         $order = $this->orderService->find($request->vnp_TxnRef);
-    //         // Validate successful
-    //         if ($request->vnp_ResponseCode == '00') {
-    //             // Payment success
-    //             DB::transaction(function () use ($order) {
-    //                 $this->transactionRepository->create([
-    //                     'user_id' => Auth::user()->id,
-    //                     'bank_account' => '123456789',
-    //                     'bank_name' => 'Test',
-    //                     'card_expiry_date' => Carbon::now(),
-    //                     'payment_method' => PaymentMethod::VNPay,
-    //                     'order_id' => $order->id,
-    //                 ]);
-    //                 $order->state = OrderState::PAID;
-    //                 $order->save();
-    //                 $ids = Session::get('carts');
-    //                 foreach ($ids as $id) {
-    //                     $cart = $this->cartRepository->findById($id);
-    //                     if ($cart) {
-    //                         $cart->state = CartState::PURCHASED;
-    //                         $cart->save();
-    //                     }
-    //                 }
-    //                 Session::forget(['carts', 'code']);
-    //             });
-
-    //             return $order->id;
-    //         } else {
-    //             // Payment fail
-    //             $order->state = OrderState::FAILED;
-    //             $order->save();
-    //             return false;
-    //         }
-    //     } else {
-    //         return false;
-    //     }
-    // }
-
-
     public function create($request, $method)
     {
         if ($method === PaymentMethod::VNPAY) {
             $orderId = $request->vnp_TxnRef;
             $statusCode = $request->vnp_ResponseCode == '00' ? true : false;
         } elseif ($method === PaymentMethod::MOMO) {
-            $orderId = $request->orderId;
+            if (preg_match('/#(\d+)/', $request->orderInfo, $matches)) {
+                $orderId = $matches[1];
+            }
             $statusCode = $request->resultCode == '0' ? true : false;
         }
 
