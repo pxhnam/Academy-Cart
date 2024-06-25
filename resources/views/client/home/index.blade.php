@@ -22,7 +22,7 @@
 
         function loadData() {
             $.ajax({
-                url: "{{ route('courses') }}",
+                url: '/courses', //{{ route('courses') }}
                 type: 'GET',
                 success: (response) => {
                     listCourses.empty();
@@ -42,7 +42,7 @@
                     }
                 },
                 error: (xhr, status, error) => {
-                    console.log(`message: ${error}`);
+                    // console.log(`message: ${error}`);
                 }
             });
         }
@@ -70,7 +70,7 @@
                     id
                 },
                 success: (response) => {
-                    // console.log(response);
+                    console.log(response);
                     if (response.success) {} else {}
                     Toast({
                         message: response.message,
@@ -78,7 +78,7 @@
                     })
                 },
                 error: (xhr, status, error) => {
-                    console.error(`message: ${error}`);
+                    // console.error(`message: ${error}`);
                 }
             })
         })

@@ -49,7 +49,7 @@ class CartService implements CartServiceInterface
                     $course = $this->courseRepository->find($cart->course_id);
                     if ($course['success']) {
                         $course = $course['course'];
-                        $course['id'] = $cart->id; #use cart_id
+                        $course['id'] = $cart->id; #use cart id
                         $course['fake_cost'] = NumberFormat::VND($course['fake_cost']);
                         $course['cost'] = NumberFormat::VND($course['cost']);
                         $courses[] = $course;
@@ -66,7 +66,8 @@ class CartService implements CartServiceInterface
     public function add($courseId)
     {
         try {
-            if ($this->courseRepository->check($courseId)) {
+            $check = $this->courseRepository->check($courseId);
+            if ($check) {
                 $cart = $this->cartRepository->findByIdCourse($courseId);
                 if ($cart) {
                     switch ($cart->state) {
