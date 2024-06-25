@@ -59,7 +59,6 @@ class MomoService implements MomoServiceInterface
         $secretKey = $this->secretKey;
         $orderInfo = "Thanh toán cho đơn hàng #" . $request->order_id;
         $amount = $request->total . '';
-        // $orderId = $request->order_id . '';
         $redirectUrl = $this->returnUrl;
         $ipnUrl = $this->returnUrl;
         $extraData = "";

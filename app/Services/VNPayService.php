@@ -91,11 +91,7 @@ class VNPayService implements VNPayServiceInterface
         $hashData = ltrim($hashData, '&');
         $secureHash = hash_hmac('sha512', $hashData, $this->vnp_HashSecret);
         if ($secureHash == $vnp_SecureHash) {
-            // if ($request->vnp_ResponseCode == '00') {
             return $this->transactionService->create($request, PaymentMethod::VNPAY);
-            // } else {
-            // return false;
-            // }
         } else {
             return false;
         }
