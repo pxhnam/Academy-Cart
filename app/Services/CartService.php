@@ -44,7 +44,7 @@ class CartService implements CartServiceInterface
         try {
             $carts = $this->cartRepository->listCart();
             $courses = [];
-            if ($carts->count() > 0) {
+            if ($carts->count()) {
                 foreach ($carts as $cart) {
                     $course = $this->courseRepository->find($cart->course_id);
                     if ($course['success']) {
@@ -55,11 +55,14 @@ class CartService implements CartServiceInterface
                         $courses[] = $course;
                     }
                 }
-                return APIResponse::make(true, 'success', '', $courses);
+                if (count($courses)) {
+                    return APIResponse::make(true, 'success', '', $courses);
+                }
             }
-            return APIResponse::make(false, 'error', '');
+            return APIResponse::make(true, 'info', '');
         } catch (Exception $ex) {
             error_log($ex->getMessage());
+            return APIResponse::make(false, 'error', 'Lỗi server');
         }
     }
 

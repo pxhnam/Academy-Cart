@@ -294,45 +294,91 @@ footer div:not(:first-child) {
         text-align: right;
     }
 }
-
-/* .list-recommend {
+/* carousel */
+.wrapper-carousel {
+    width: 100%;
     position: relative;
 }
-.list-recommend::after {
-    content: "";
-    position: absolute;
-    right: -30px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border-right: 3px solid black;
-    border-top: 3px solid black;
-    transform: rotate(45deg);
-    cursor: pointer;
-}
-.list-recommend::before {
-    content: "";
-    position: absolute;
-    left: -30px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border-left: 3px solid black;
-    border-bottom: 3px solid black;
-    transform: rotate(45deg);
-    cursor: pointer;
-} */
 
-.list-recommend {
-    scrollbar-width: none; /* Firefox */
+.wrapper-carousel > i {
+    top: 50%;
+    height: 50px;
+    width: 50px;
+    cursor: pointer;
+    font-size: 1.25rem;
+    position: absolute;
+    text-align: center;
+    line-height: 50px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.23);
+    transform: translateY(-50%);
+    transition: transform 0.1s linear;
 }
-.list-recommend::-webkit-scrollbar {
-    display: none; /* Safari and Chrome */
+.wrapper-carousel > i:active {
+    transform: translateY(-50%) scale(0.85);
 }
+.wrapper-carousel > i:first-child {
+    left: -12px;
+}
+.wrapper-carousel > i:last-child {
+    right: -12px;
+}
+.wrapper-carousel #carousel {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: calc(100% / 4);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    border-radius: 8px;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    margin-bottom: 0;
+    padding-left: 0;
+}
+#carousel::-webkit-scrollbar {
+    display: none;
+}
+#carousel.no-transition {
+    scroll-behavior: auto;
+}
+#carousel.dragging {
+    scroll-snap-type: none;
+    scroll-behavior: auto;
+}
+#carousel.dragging .box {
+    cursor: grab;
+    user-select: none;
+}
+#carousel .box {
+    scroll-snap-align: start;
+    list-style: none;
+}
+#carousel .box > div {
+    border-radius: 8px;
+    flex-direction: column;
+    margin: 15px;
+    box-shadow: 0 5px 8px rgba(0, 0, 0, 0.08);
+}
+#carousel .box > div img {
+    border-radius: 8px;
+}
+@media screen and (max-width: 1400px) {
+    .wrapper-carousel #carousel {
+        grid-auto-columns: calc(100% / 3);
+    }
+}
+@media screen and (max-width: 1000px) {
+    .wrapper-carousel #carousel {
+        grid-auto-columns: calc(100% / 2);
+    }
+}
+@media screen and (max-width: 770px) {
+    .wrapper-carousel #carousel {
+        grid-auto-columns: 100%;
+    }
+}
+/* carousel */
 .notice-checkout {
     color: #6d6b6b;
     font-size: 20px;

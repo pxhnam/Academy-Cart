@@ -11,18 +11,16 @@ use App\Http\Controllers\TransactionController;
 
 Route::prefix('')->group(function () {
 
-    #Home
-    // Route::prefix('')->name('')->group(function () {
-    // });
-
     #Index
     Route::get('', [HomeController::class, 'index'])->name('home');
 
     Route::get('thanh-toan', [OrderController::class, 'index'])->middleware(['checkout', 'auth'])->name('checkout');
     Route::post('thanh-toan', [OrderController::class, 'checkout'])->middleware(['checkout', 'auth']);
 
+    #Result payment
     Route::get('ket-qua', [OrderController::class, 'result'])->middleware('auth')->name('result');
 
+    #Response payment
     Route::get('vnpay-return', [TransactionController::class, 'vnpayReturn'])->middleware('auth')->name('vnpay.return');
     Route::get('momo-return', [TransactionController::class, 'momoReturn'])->middleware('auth')->name('momo.return');
 
@@ -37,20 +35,21 @@ Route::prefix('')->group(function () {
     #Logout
     Route::get('logout', [HomeController::class, 'logout'])->name('logout');
 
-
+    #Carts
     Route::get('gio-hang', [CartController::class, 'index'])->name('cart')->middleware('auth');
 });
 
 //API
-Route::prefix('cart')->middleware('authenticate')->name('carts.')->group(function () {
-    Route::get('get', [CartController::class, 'list'])->name('list');
+Route::prefix('carts')->middleware('authenticate')->name('carts.')->group(function () {
+    Route::get('', [CartController::class, 'list'])->name('list');
     Route::get('summary', [CartController::class, 'summary'])->name('summary');
-    Route::post('add-cart', [CartController::class, 'addToCart'])->name('add');
-    Route::post('remove-cart', [CartController::class, 'remove'])->name('remove');
-    Route::get('recommend-courses', [CartController::class, 'recommend'])->name('recommend');
+    Route::post('add', [CartController::class, 'addToCart'])->name('add');
+    Route::post('remove', [CartController::class, 'remove'])->name('remove');
+    Route::get('recommend', [CartController::class, 'recommend'])->name('recommend');
 
     Route::post('checkout', [CartController::class, 'checkout'])->name('checkout');
 });
+
 Route::prefix('courses')->group(function () {
     Route::get('', [CourseController::class, 'get'])->name('courses');
 });

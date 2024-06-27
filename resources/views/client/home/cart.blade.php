@@ -65,22 +65,46 @@
                 </button>
             </div>
         </div>
-        <div class="col-md-12 mt-5">
-            <h3 class="fw-bold">Các khóa học phổ biến khác:</h3>
-            <div class="row list-recommend overflow-hidden overflow-x-auto flex-nowrap p-3">
+        @if (count($listRecommend ?? []))
+            <div class="col-md-12 mt-5">
+                <h3 class="fw-bold">Các khóa học phổ biến khác:</h3>
+                <div class="list-recommend wrapper-carousel">
+                    <i id="left" class="fa-solid fa-angle-left"></i>
+                    <ul id="carousel">
+                        @foreach ($listRecommend ?? [] as $course)
+                            <li class="box" data-id="{{ $course['id'] }}">
+                                <div class="bg-light">
+                                    <img src="{{ $course['thumbnail'] }}" alt="{{ $course['name'] }}" class="w-100"
+                                        height="150px" />
+                                    <div class="p-3 p-xxl-2">
+                                        <h5 class="fw-bold">
+                                            <a href="#" class="text-decoration-none">{{ $course['name'] }}</a>
+                                        </h5>
+                                        <p class="mb-0">
+                                            <i class="fa-regular fa-clock"></i>
+                                            {{ $course['duration'] }} giờ
+                                        </p>
+                                        <p class="mb-0">Bởi {{ $course['lecturer'] }}</p>
+                                    </div>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                    <i id="right" class="fa-solid fa-angle-right"></i>
 
+                </div>
             </div>
-        </div>
+        @endif
     </div>
 @endsection
 
 @section('scripts')
+    <script src="{{ asset('assets/js/carousel.js') }}" defer></script>
     <script>
         var ids = new Set();
         var codes = new Set();
         var listCourses = $('#list-courses');
         var listCoupons = $('#list-coupons');
-        var listRecommend = $('.list-recommend');
         // var tableCart = $('.table-cart');
         var bodyTable = $('#body-table');
         var btnApply = $('#btn-apply');
@@ -94,9 +118,9 @@
         var totalPrice = $('.total-price');
         var btnRemove = $('#btn-remove'); //remove All
         let inputSelectCourse;
+
         _document.ready(function() {
             loadData();
-            loadRecommend();
         });
 
         _document.on('click', '.btn-back', function() {
@@ -113,17 +137,11 @@
         }
 
         function loadData() {
-            $.ajax({
-                url: "{{ route('carts.list') }}",
-                type: 'GET',
-                success: (response) => {
-                    // console.log(response);
-                    //listCourses.empty();
-                    if (response.success) {
-                        let carts = response.data;
-                        let data = '';
-                        $.each(carts, (index, cart) =>
-                            data += boxCourse(
+            $.get('/carts', function(response, status) {
+                if (status === 'success') {
+                    if (response.data) {
+                        let data = response.data.map(cart =>
+                            boxCourse(
                                 cart.id,
                                 cart.thumbnail,
                                 cart.name,
@@ -132,39 +150,15 @@
                                 cart.cost,
                                 cart.duration
                             )
-                        )
+                        ).join('');
                         bodyTable.append(data);
                         Summary();
-                        // listCourses.append(boxCart(data));
-                        // listCourses.append(boxSummary());
-                        // Summary();
                         init();
-                    } else {
-                        main.empty().append(boxEmpty()).css({
-                            'display': 'flex',
-                            'justify-content': 'center',
-                            'align-items': 'center'
-                        });
+                        return;
                     }
-                },
-                error: () => {}
-            })
-        }
-
-        function loadRecommend() {
-            $.ajax({
-                url: "{{ route('carts.recommend') }}",
-                type: 'GET',
-                success: (response) => {
-                    let data = '';
-                    $.each(response, (index, course) => {
-                        data += boxRecommend(course.id, course.thumbnail, course.name, course.duration,
-                            course.lecturer);
-                    });
-                    listRecommend.append(data);
-                },
-                error: () => {}
-            })
+                }
+                showEmptyBox();
+            });
         }
 
         function updateCourseChecked() {
@@ -203,43 +197,37 @@
         })
 
         function Summary() {
-            $.ajax({
-                url: "{{ route('carts.summary') }}",
-                type: 'GET',
-                data: {
-                    ids: Array.from(ids),
-                    codes: Array.from(codes)
-                },
-                success: (response) => {
-                    if (response.success) {
-                        let data = response.data;
-                        boxSummary(
-                            data.basePrice,
-                            data.reducePrice,
-                            data.discount,
-                            data.totalPrice
-                        );
-                        listCoupons.empty();
-
-                        codes = new Set(data.codes ?? []);
-                        let coupons = data.coupons;
-                        if (coupons.length !== 0) {
-                            let row = '';
-                            $.each(coupons.data, (index, _this) => {
-                                let isChecked = data.codes.includes(_this.code);
-                                let isMax = coupons.limit;
-                                row += boxCoupons(_this.code, _this.description, isChecked, isMax);
-                            })
-                            listCoupons.append(row);
-                        }
-                    } else {}
-
-                    response.message && Toast({
-                        message: response.message,
-                        type: response.type
-                    });
-                },
-                error: () => {}
+            $.get('/carts/summary', {
+                ids: Array.from(ids),
+                codes: Array.from(codes)
+            }, function(response, status) {
+                if (status === 'success' && response.success) {
+                    listCoupons.empty();
+                    const {
+                        basePrice,
+                        reducePrice,
+                        discount,
+                        totalPrice,
+                        codes: resCodes,
+                        coupons
+                    } = response.data;
+                    boxSummary(basePrice, reducePrice, discount, totalPrice);
+                    codes = new Set(resCodes ?? []);
+                    if (coupons?.data?.length) {
+                        let row = '';
+                        $.each(coupons.data, (index, coupon) => {
+                            let isChecked = resCodes.includes(coupon.code);
+                            row += boxCoupons(coupon.code, coupon.description, isChecked, coupons.limit);
+                        });
+                        listCoupons.append(row);
+                    }
+                    if (response.message) {
+                        Toast({
+                            message: response.message,
+                            type: response.type
+                        });
+                    }
+                }
             });
         }
 
@@ -252,17 +240,11 @@
 
         //function remove course
         function removeCourse(id, callback) {
-            $.ajax({
-                url: "{{ route('carts.remove') }}",
-                type: 'POST',
-                data: {
-                    id
-                },
-                success: (response) => {
+            $.post('/carts/remove', {
+                id
+            }, function(response, status) {
+                if (status === 'success') {
                     callback(response);
-                },
-                error: (xhr, status, error) => {
-                    console.error(`message: ${error}`);
                 }
             });
         }
@@ -282,7 +264,7 @@
                     Toast({
                         type: response.type,
                         message: response.message
-                    })
+                    });
                 }
             });
         });
@@ -311,31 +293,28 @@
                         Toast({
                             type: response.type,
                             message: response.message
-                        })
+                        });
                     }
                 });
             });
         });
 
         btnCheckout.click(function() {
-            $.ajax({
-                url: "{{ route('carts.checkout') }}",
-                type: 'POST',
-                data: {
-                    ids: Array.from(ids),
-                    codes: Array.from(codes)
-                },
-                success: (response) => {
+            $.post('/carts/checkout', {
+                ids: Array.from(ids),
+                codes: Array.from(codes)
+            }, function(response, status) {
+                if (status === 'success') {
                     if (response.success) {
                         window.location.href = response.data.link ?? '';
-                    } else {
-                        response.message && Toast({
+                    }
+                    if (response.message) {
+                        Toast({
                             message: response.message,
                             type: response.type
                         });
                     }
                 }
-
             });
         });
 
@@ -354,23 +333,15 @@
             updateCourseChecked();
         });
 
-
+        function showEmptyBox() {
+            main.empty().append(boxEmpty()).css({
+                'display': 'flex',
+                'justify-content': 'center',
+                'align-items': 'center'
+            });
+        }
 
         //Render UI
-        function boxRecommend(id, thumbnail, name, duration, author) {
-            return (`<div class="col-xxl-3 col-xl-4 col-md-6" data-id="${id}">
-                    <div class="shadow bg-light rounded m-0 m-sm-5 m-md-2 m-lg-5 m-xl-2">
-                        <img src="${thumbnail}" alt="${name}" height="150px" class="w-100 rounded" />
-                        <div class="p-2">
-                            <h5 class="fw-bold"><a href='#' class='text-decoration-none'>${name}</a></h5>
-                            <p class="mb-0">
-                                <i class="fa-regular fa-clock"></i> ${duration} giờ
-                            </p>
-                            <p class="mb-0">Bởi ${author}</p>
-                        </div>
-                    </div>
-                </div>`);
-        }
 
         function boxCourse(id, thumbnail, name, author, fake_cost, cost, duration) {
             return (`<li class="table-row" data-id="${id}">

@@ -18,34 +18,50 @@ class CourseRepository implements CourseRepositoryInterface
 
     public function list()
     {
-        $data = Http::get($this->apiCourse);
-        if ($data->successful()) {
-            return $data->json();
+        try {
+            $data = Http::get($this->apiCourse);
+            if ($data->successful()) {
+                return $data->json();
+            }
+            return [];
+        } catch (\Exception $ex) {
+            error_log($ex->getMessage());
+            return [];
         }
     }
 
     public function find($id)
     {
-        $data = Http::get($this->apiCourse . 'find/' . $id);
-        if ($data->successful()) {
-            return $data->json();
+        try {
+            $data = Http::get($this->apiCourse . 'find/' . $id);
+            if ($data->successful()) {
+                return $data->json();
+            }
+        } catch (\Exception $ex) {
+            error_log($ex->getMessage());
         }
     }
     public function check($id)
     {
-        $data = Http::get($this->apiCourse . 'check/' . $id);
-        if ($data->successful()) {
-            return $data->json();
+        try {
+            $data = Http::get($this->apiCourse . 'check/' . $id);
+            if ($data->successful()) {
+                return $data->json();
+            }
+        } catch (\Exception $ex) {
+            error_log($ex->getMessage());
         }
     }
     public function getRandomCoursesNotInCart($ids)
     {
-
-        // Chuyển mảng $ids thành chuỗi, phân cách bởi dấu phẩy
-        $idsString = implode(',', $ids);
-        $data = Http::get($this->apiCourse . 'randomCoursesNotInCart/' . $idsString);
-        if ($data->successful()) {
-            return $data->json();
+        try {
+            $idsString = implode(',', $ids);
+            $data = Http::get($this->apiCourse . 'randomCoursesNotInCart/' . $idsString);
+            if ($data->successful()) {
+                return $data->json();
+            }
+        } catch (\Exception $ex) {
+            error_log($ex->getMessage());
         }
     }
 }

@@ -64,8 +64,9 @@ class OrderController extends Controller
                         ['notify' => ['type' => 'error', 'message' => 'Có lỗi xảy ra! Vui lòng thử lại sau.']]
                     );
                 case PaymentMethod::BANK:
-                    $stk = '1042806691';
-                    $bank = 'VCB';
+                    $name = 'Phan Xuan Hoai Nam';
+                    $stk = 'PhanXuanHoaiNam';
+                    $bank = 'TPB';
                     $order = $this->orderService->createOrder();
                     if ($order) {
                         $qrPay = 'https://img.vietqr.io/image/' . $bank . '-' . $stk . '-compact.png?' .
@@ -73,7 +74,9 @@ class OrderController extends Controller
                             $order['total'] .
                             '&addInfo=' .
                             'Thanh toán cho mã đơn hàng: #' .
-                            $order['order_id'];
+                            $order['order_id'] .
+                            '&accountName='
+                            . $name;
                         return response()->json(['success' => true, 'qrPay' => $qrPay]);
                     }
 
@@ -88,7 +91,6 @@ class OrderController extends Controller
 
     public function result()
     {
-        // session()->put('result', ['MOMO', 31]);
         if (session()->has('result')) {
             $data = session('result');
             if (is_array($data)) {
@@ -96,7 +98,6 @@ class OrderController extends Controller
                 $data = $this->orderService->bill($orderId);
                 $data['method'] = $method;
             }
-
             return view('client.home.result', compact('data'));
         } else {
             return redirect()->route('home');

@@ -16,7 +16,8 @@ class CartController extends Controller
     }
     public function index()
     {
-        return view("client.home.cart");
+        $listRecommend = $this->cartService->listRecommend();
+        return view("client.home.cart", compact('listRecommend'));
     }
     public function list()
     {

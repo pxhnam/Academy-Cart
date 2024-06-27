@@ -116,6 +116,9 @@
                 $('#method').val($(this).data('id'));
             });
         });
+        _document.on('click', '.btn-back', function() {
+            window.location.href = '/gio-hang';
+        });
         $('#btn-payment').click(function(e) {
             let method = $('#method').val();
             if (method == 'BANK') { //|| method == 'MOMO'

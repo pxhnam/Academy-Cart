@@ -21,28 +21,22 @@
         var listCourses = $('#list-courses');
 
         function loadData() {
-            $.ajax({
-                url: "{{ route('courses') }}",
-                type: 'GET',
-                success: (response) => {
+            $.get('/courses', function(response, status) {
+                if (status === 'success') {
                     listCourses.empty();
                     if (response.success) {
                         let data = response.courses;
-                        if (data.length === 0) {
-                            listCourses.append(`<idv class='text-center'>KHÔNG CÓ KHÓA HỌC NÀO!</div>`);
-                        } else {
-                            let courses = '';
-                            $.each(data, (index, course) =>
-                                courses += card(course.id, course.name, course.thumbnail)
-                            );
+                        if (data.length) {
+                            let courses = data.map(course =>
+                                card(course.id, course.name, course.thumbnail)
+                            ).join('');
                             listCourses.append(courses);
+                        } else {
+                            listCourses.append(`<idv class='text-center'>KHÔNG CÓ KHÓA HỌC NÀO!</div>`);
                         }
                     } else {
                         listCourses.append(`<idv class='text-center'>${response.message}</div>`);
                     }
-                },
-                error: (xhr, status, error) => {
-                    console.log(`message: ${error}`);
                 }
             });
         }
@@ -63,25 +57,17 @@
 
         _document.on('click', '#btn-add-cart', function() {
             let id = $(this).closest('.card').data('id');
-            $.ajax({
-                url: "{{ route('carts.add') }}",
-                type: 'POST',
-                data: {
-                    id
-                },
-                success: (response) => {
-                    // console.log(response);
-                    if (response.success) {} else {}
+            $.post('/carts/add', {
+                id
+            }, function(response, status) {
+                if (status === 'success') {
                     Toast({
                         message: response.message,
                         type: response.type
                     })
-                },
-                error: (xhr, status, error) => {
-                    console.error(`message: ${error}`);
                 }
-            })
-        })
+            });
+        });
 
         $(document).ready(function() {
             loadData();
