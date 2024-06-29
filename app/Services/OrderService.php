@@ -47,7 +47,6 @@ class OrderService implements OrderServiceInterface
         $this->couponRepository = $couponRepository;
         $this->conditionRepository = $conditionRepository;
         $this->userId = Auth::user()->id;
-        $this->initializeDiscountTrait($couponRepository, $conditionRepository);
     }
 
     public function show()

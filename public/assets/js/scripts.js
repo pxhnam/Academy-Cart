@@ -1,20 +1,21 @@
-const _document = $(document);
+const $document = $(document);
 const modal = $(".modal");
 const main = $("main");
 const menuUser = $(".menu-user");
 
-_document.ready(function () {});
-_document.ajaxStart(() => $("#loading").fadeIn());
-_document.ajaxStop(() => $("#loading").fadeOut());
+$document.ready(function () {});
+$document.ajaxStart(() => $("#loading").fadeIn());
+$document.ajaxStop(() => $("#loading").fadeOut());
 
-_document.on("click", "#btn-cart", function () {
+$document.on("click", "#btn-cart", function () {
     window.location.href = "/gio-hang";
 });
 
-_document.on("click", ".box-avatar-nav", function () {
+$document.on("click", ".box-avatar-nav", function () {
     menuUser.toggleClass("show");
 });
-_document.on("click", function (event) {
+
+$document.on("click", function (event) {
     if (
         !$(event.target).closest(".menu-user").length &&
         !$(event.target).closest(".box-avatar-nav").length

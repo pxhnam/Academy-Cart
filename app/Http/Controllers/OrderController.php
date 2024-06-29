@@ -100,7 +100,8 @@ class OrderController extends Controller
             }
             return view('client.home.result', compact('data'));
         } else {
-            return redirect()->route('home');
+            abort(404);
+            //return redirect()->route('home');
         }
     }
 }

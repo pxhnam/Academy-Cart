@@ -119,15 +119,15 @@
         var btnRemove = $('#btn-remove'); //remove All
         let inputSelectCourse;
 
-        _document.ready(function() {
+        $document.ready(function() {
             loadData();
         });
 
-        _document.on('click', '.btn-back', function() {
+        $document.on('click', '.btn-back', function() {
             window.location.href = '/';
         });
 
-        _document.on('click', '.btn-discovery', function() {
+        $document.on('click', '.btn-discovery', function() {
             window.location.href = '/';
         });
 
@@ -186,7 +186,7 @@
             });
         }
 
-        _document.on('click', 'input.select-code', function() {
+        $document.on('click', 'input.select-code', function() {
             let code = $(this).val();
             if ($(this).is(':checked')) {
                 codes.add(code);
@@ -250,53 +250,57 @@
         }
 
         //Remove a course
-        _document.on('click', '.btn-remove', function() {
-            let _this = $(this).closest('.table-row');
-            let id = _this.data('id');
-            removeCourse(id, (response) => {
-                if (response.success) {
-                    if (response.data) {
-                        _this.remove();
-                        updateCourseChecked();
-                    } else {
-                        loadData();
-                    }
-                    Toast({
-                        type: response.type,
-                        message: response.message
-                    });
-                }
-            });
-        });
-
-        //Remove all courses
-        btnRemove.click(function() {
-            let selected = $('input.select-course:checked');
-            let completed = 0;
-            let reload = false;
-            selected.each(function() {
+        $document.on('click', '.btn-remove', function() {
+            if (confirm('Bạn có chắc chắn xóa khóa học này!')) {
                 let _this = $(this).closest('.table-row');
                 let id = _this.data('id');
                 removeCourse(id, (response) => {
                     if (response.success) {
                         if (response.data) {
-                            reload = true;
                             _this.remove();
+                            updateCourseChecked();
                         } else {
-                            reload = false;
                             loadData();
                         }
-                    }
-                    completed++;
-                    if (completed === selected.length) {
-                        if (reload) updateCourseChecked();
                         Toast({
                             type: response.type,
                             message: response.message
                         });
                     }
                 });
-            });
+            }
+        });
+
+        //Remove courses
+        btnRemove.click(function() {
+            let selected = $('input.select-course:checked');
+            if (confirm(`Bạn có chắc chắn xóa ${selected.length} khóa học này!`)) {
+                let completed = 0;
+                let reload = false;
+                selected.each(function() {
+                    let _this = $(this).closest('.table-row');
+                    let id = _this.data('id');
+                    removeCourse(id, (response) => {
+                        if (response.success) {
+                            if (response.data) {
+                                reload = true;
+                                _this.remove();
+                            } else {
+                                reload = false;
+                                loadData();
+                            }
+                        }
+                        completed++;
+                        if (completed === selected.length) {
+                            if (reload) updateCourseChecked();
+                            Toast({
+                                type: response.type,
+                                message: response.message
+                            });
+                        }
+                    });
+                });
+            }
         });
 
         btnCheckout.click(function() {
@@ -319,7 +323,7 @@
         });
 
         //checkbox select all or cancel
-        _document.on('click', 'input.select-courses', function() {
+        $document.on('click', 'input.select-courses', function() {
             let checked = this.checked;
             inputSelectCourse.each(function(index, item) {
                 item.checked = checked;
@@ -327,7 +331,7 @@
             updateCourseChecked();
         });
         //check selected items
-        _document.on('click', 'input.select-course', function() {
+        $document.on('click', 'input.select-course', function() {
             let selected = $('input.select-course:checked');
             inputSelectCourses[0].checked = selected.length === inputSelectCourse.length;
             updateCourseChecked();

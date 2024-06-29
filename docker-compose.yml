@@ -1,43 +1,65 @@
 version: "3.8"
 services:
     app:
-        image: php:8.0-fpm
-        container_name: laravel_app
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: academy-carts
+        container_name: academy-carts
+        restart: unless-stopped
         working_dir: /var/www
         volumes:
-            - ./:/var/www
+            - .:/var/www
+            - ./docker/php/php.ini:/usr/local/etc/php/php.ini
         networks:
-            - laravel
+            - network-app
 
-    web:
+    webserver:
         image: nginx:alpine
-        container_name: laravel_web
+        container_name: nginx
+        restart: unless-stopped
         ports:
             - "8000:80"
         volumes:
-            - ./:/var/www
+            - .:/var/www
             - ./docker/nginx/conf.d:/etc/nginx/conf.d
         depends_on:
             - app
         networks:
-            - laravel
+            - network-app
 
     db:
-        image: mysql:5.7
-        container_name: laravel_db
+        image: mysql
+        container_name: mysql
         restart: unless-stopped
         environment:
-            MYSQL_DATABASE: laravel
             MYSQL_ROOT_PASSWORD: root
-            MYSQL_PASSWORD: secret
-            MYSQL_USER: user
+            MYSQL_DATABASE: academy_carts
+        ports:
+            - "3306:3306"
         volumes:
+            - ./docker/mysql/conf.d:/etc/mysql/conf.d
             - dbdata:/var/lib/mysql
         networks:
-            - laravel
+            - network-app
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: phpmyadmin
+        restart: unless-stopped
+        environment:
+            PMA_HOST: db
+            MYSQL_ROOT_PASSWORD: root
+        ports:
+            - "8080:80"
+        depends_on:
+            - db
+        networks:
+            - network-app
 
 networks:
-    laravel:
+    network-app:
+        driver: bridge
 
 volumes:
     dbdata:

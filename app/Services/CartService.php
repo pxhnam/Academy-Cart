@@ -36,7 +36,6 @@ class CartService implements CartServiceInterface
         $this->conditionRepository = $conditionRepository;
         $this->couponRepository = $couponRepository;
         $this->orderRepository = $orderRepository;
-        $this->initializeDiscountTrait($couponRepository, $conditionRepository);
     }
 
     public function list()
@@ -114,7 +113,6 @@ class CartService implements CartServiceInterface
             $coupons = [];
             $message = '';
             $count = 0;
-            // boxSummary(basePrice, reducePrice, discount, totalPrice)
             if (!empty($ids)) {
                 list($basePrice, $totalPrice) = $this->makeTotalCarts($ids);
 
@@ -134,14 +132,13 @@ class CartService implements CartServiceInterface
                             $count++;
                             $discount = $limit;
                             $coupons['limit'] = true;
-                            // break;
                             if ($count > 1) {
                                 $message = 'Đã tối đa giới hạn giảm';
                                 unset($codes[$key]);
                             }
                         }
                     } else {
-                        if (!empty($ids)) $message = 'Mã giảm giá không hợp lệ';
+                        $message = 'Mã giảm giá không khả dụng!';
                         unset($codes[$key]);
                     }
                 }
@@ -174,7 +171,6 @@ class CartService implements CartServiceInterface
             $codes = array_map('strtoupper', $codes);
             $codes = array_unique($codes);
             $carts = [];
-            // $total = 0;
             if (!empty($ids)) {
                 foreach ($ids as $id) {
                     $cart = $this->cartRepository->findById($id);

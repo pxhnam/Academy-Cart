@@ -10,16 +10,6 @@ use App\Repositories\Interfaces\DiscountConditionRepositoryInterface;
 
 trait DiscountTrait
 {
-    protected $couponRepository;
-    protected $conditionRepository;
-
-    public function initializeDiscountTrait(
-        CouponRepositoryInterface $couponRepository,
-        DiscountConditionRepositoryInterface $conditionRepository
-    ) {
-        $this->couponRepository = $couponRepository;
-        $this->conditionRepository = $conditionRepository;
-    }
 
     public function makeDiscountCost($code, $cost)
     {

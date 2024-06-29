@@ -130,11 +130,11 @@
 @endsection
 @section('scripts')
     <script>
-        _document.ready(function() {});
-        _document.on('click', '#btn-home', function() {
+        $document.ready(function() {});
+        $document.on('click', '#btn-home', function() {
             window.location.href = '/';
         });
-        _document.on('click', '#btn-rePayment', function() {
+        $document.on('click', '#btn-rePayment', function() {
             window.location.href = '/thanh-toan';
         });
     </script>

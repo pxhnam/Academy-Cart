@@ -18,6 +18,9 @@
 
 @section('scripts')
     <script>
+        window.addEventListener('resize', function(event) {
+            console.log('');
+        }, true);
         var listCourses = $('#list-courses');
 
         function loadData() {
@@ -55,21 +58,23 @@
                         </div>`;
         }
 
-        _document.on('click', '#btn-add-cart', function() {
+        $document.on('click', '#btn-add-cart', function() {
             let id = $(this).closest('.card').data('id');
             $.post('/carts/add', {
                 id
             }, function(response, status) {
                 if (status === 'success') {
-                    Toast({
-                        message: response.message,
-                        type: response.type
-                    })
+                    if (response.message) {
+                        Toast({
+                            message: response.message,
+                            type: response.type
+                        });
+                    }
                 }
             });
         });
 
-        $(document).ready(function() {
+        $document.ready(function() {
             loadData();
         });
     </script>

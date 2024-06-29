@@ -1,31 +1,26 @@
-FROM php:8.0-fpm
+FROM php:8.2-fpm-alpine
 
-# Cài đặt các phần mở rộng PHP cần thiết
-RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    zip \
-    unzip \
-    git \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd \
-    && docker-php-ext-install pdo pdo_mysql
-
-# Cài đặt Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Thiết lập thư mục làm việc
 WORKDIR /var/www
 
-# Copy mã nguồn Laravel vào container
+RUN apk update \
+    && apk add --no-cache \
+    libjpeg-turbo-dev \
+    libpng-dev \
+    libwebp-dev \
+    freetype-dev \
+    libzip-dev \
+    zip \
+    && docker-php-ext-install pdo pdo_mysql \
+    && docker-php-ext-install mysqli && docker-php-ext-enable mysqli \
+    && docker-php-ext-install exif \
+    && docker-php-ext-install zip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd
+
+COPY ./docker/php/php.ini /usr/local/etc/php/
 COPY . .
+COPY --from=composer /usr/bin/composer /usr/bin/composer
 
-# Cài đặt các gói phụ thuộc của Laravel
 RUN composer install
-
-# Chmod quyền cho thư mục storage và cache
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
-
-EXPOSE 9000
-CMD ["php-fpm"]
+# RUN php artisan migrate
+RUN php artisan key:generate

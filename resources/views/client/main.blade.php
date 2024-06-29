@@ -38,7 +38,7 @@
     <script src="{{ asset('assets/js/scripts.js') }}"></script>
     @if (session('notify'))
         <script>
-            _document.ready(() => {
+            $document.ready(() => {
                 setTimeout(() => {
                     Toast({
                         message: '{{ session('notify.message') }}',

@@ -109,14 +109,14 @@
 
 @section('scripts')
     <script>
-        _document.ready(function() {
+        $document.ready(function() {
             $('#list-method .method-item').on('click', function() {
                 $('#list-method .method-item').removeClass('active');
                 $(this).addClass('active');
                 $('#method').val($(this).data('id'));
             });
         });
-        _document.on('click', '.btn-back', function() {
+        $document.on('click', '.btn-back', function() {
             window.location.href = '/gio-hang';
         });
         $('#btn-payment').click(function(e) {
